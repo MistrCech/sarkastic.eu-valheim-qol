@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.3] - 2026-09-13
+
+### Added
+
+- `[Guards] PersistentEventsAdminOnly` (on): only admins and the game itself may start or stop
+  persistent world events. In Valheim 1.0.12 the client console command `pevents start|stop
+  <name>` has no cheat or admin flag, so any player can type it into the chat, and the server's
+  handlers check nobody. Others are told "Only admins can start or stop world events" and logged.
+
 ## [0.1.2] - 2026-09-13
 
 ### Added

@@ -23,6 +23,8 @@ namespace SarkasticQoL
 		public readonly ConfigEntry<bool> ChatReplyInChat;
 		public readonly ConfigEntry<bool> ChatLog;
 
+		public readonly ConfigEntry<bool> GuardPersistentEvents;
+
 		public readonly ConfigEntry<string> MotdText;
 		public readonly ConfigEntry<float> MotdDelaySeconds;
 
@@ -67,6 +69,9 @@ namespace SarkasticQoL
 				"Answer commands in the chat (needs ServerPresence). Off: at the top left of the screen, where it fades after a few seconds.");
 			ChatLog = config.Bind("Chat", "Log", true,
 				"Write the players' chat to the server log (needs ServerPresence to see it at all).");
+
+			GuardPersistentEvents = config.Bind("Guards", "PersistentEventsAdminOnly", true,
+				"Only admins (adminlist.txt) and the game itself may start or stop persistent world events. In Valheim 1.0 the client command 'pevents start|stop <name>' is open to every player and the server checks nobody.");
 
 			MotdText = config.Bind("Motd", "Text", "",
 				"Shown in the middle of a player's screen after they log in. Empty = nothing. Use | for a line break.");

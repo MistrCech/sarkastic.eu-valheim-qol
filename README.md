@@ -12,6 +12,7 @@ small conveniences for the players, all switchable, none of them needing anythin
 - **Field overrides** for any player-built piece from a text file: the range of a crafting
   station, a fireplace that needs no fuel, whatever the game keeps in a public field.
 - **Message of the day** after logging in.
+- **A guard** for a hole in the game: persistent world events, which any player could start or stop with `/pevents` in 1.0.12, are admin-only.
 
 Players need nothing: vanilla clients work. The plugin depends on BepInEx (with its Harmony) and
 nothing else.
@@ -71,6 +72,7 @@ it; edit the config file and restart instead.
 | `[Ballistas] TargetPlayers`, `TargetTames` | false, false | Defaults for ballistas nobody set with `!ballista`. |
 | `[Tames] Progress`, `ProgressStepPercent`, `ProgressRange` | true, 5, 30 | Progress text, how often it repeats, who sees it. |
 | `[Containers] <prefab>` | the game's size | One entry per buildable container appears once the world is loaded, `WIDTHxHEIGHT`, at most 8 wide. A container is only shrunk when its items fit. |
+| `[Guards] PersistentEventsAdminOnly` | true | Only admins and the game may start or stop persistent world events (`/pevents`, open to everyone in 1.0.12). |
 | `[Prefabs] File` | `sarkasticeu.qol.prefabs.txt` | One override per line: `<prefab> <Component>.<field> <value>`, e.g. `piece_workbench CraftingStation.m_rangeBuild 20`. |
 
 Every feature has its own `Enabled`.
