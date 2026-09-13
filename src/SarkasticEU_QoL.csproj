@@ -4,7 +4,7 @@
     <AssemblyName>SarkasticEU_QoL</AssemblyName>
     <RootNamespace>SarkasticQoL</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <OutputPath>$(MSBuildThisFileDirectory)../bin/$(Configuration)/</OutputPath>
     <!-- Path to a Valheim dedicated server with BepInEx: environment variable VALHEIM_DEDI_INSTALL or -p:ValheimServerDir=... -->
@@ -16,6 +16,7 @@
     <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" ExcludeAssets="runtime" />
     <Reference Include="assembly_valheim" Publicize="true"><HintPath>$(Managed)/assembly_valheim.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="assembly_utils" Publicize="true"><HintPath>$(Managed)/assembly_utils.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Splatform"><HintPath>$(Managed)/Splatform.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine"><HintPath>$(Managed)/UnityEngine.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(Managed)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="BepInEx"><HintPath>$(ValheimServerDir)/BepInEx/core/BepInEx.dll</HintPath><Private>false</Private></Reference>

@@ -6,85 +6,156 @@ using SarkasticQoL.Features;
 namespace SarkasticQoL
 {
 	/*
-		Commands from players, two ways in:
+		Commands from players, three ways in:
 
-		1. Chat: a message a player types reaches the server as the routed RPC "Say" on the
-		   player's own character (Talker.Say) -- but only as one copy per *other* player, sent
-		   for the server to pass on (Chat.CheckPermissionsAndSendChatMessageRPCsAsync; the
-		   server itself is never a recipient). A copy that starts with the prefix is handled here
-		   and not passed on, so no other player sees it. With nobody else online nothing is sent
-		   at all, so chat commands need another player online.
+		1. Chat addressed to the server. A client sends every chat message once per entry of the
+		   player list, addressed to that entry's peer id, and to nobody else. With the server
+		   listed as a player (ServerPresence) one copy is addressed to the server and handled in
+		   HandleRoutedRPC -- alone or not. The copies for the other players pass through RouteRPC,
+		   where a command is swallowed so nobody else sees it.
 
-		2. The game console: a vanilla client forwards a few of the game's own console commands
+		2. Chat without the server in the list (ServerPresence off): only the copies for other
+		   players exist, so a command works while somebody else is online; the first copy is
+		   handled in RouteRPC and the rest swallowed.
+
+		3. The game console: a vanilla client forwards a few of the game's own console commands
 		   to the server when it cannot run them itself (ZNet.RemoteCommand -> RPC_RemoteCommand),
 		   where the game only lets admins run them. `sleep` is one of them and is taken over
-		   here for everyone as the sleep vote: /sleep in the chat or the console always reaches
-		   the server, alone or not.
+		   here for everyone as the sleep vote: /sleep always reaches the server.
 
-		Replies go to the top left of the sender's screen (and, for the console way, to their
-		console as well).
+		Replies go to the chat (as a line from the server's entry) or, without it, to the top
+		left of the screen.
 	*/
-	[HarmonyPatch(typeof(ZRoutedRpc), "RouteRPC")]
 	internal static class Commands
 	{
 		private const float Reach = 5f;
 		private static readonly int SayHash = "Say".GetStableHashCode();
+		private static readonly int ChatMessageHash = "ChatMessage".GetStableHashCode();
 		private static long s_lastSender;
 		private static string s_lastText;
 		private static DateTime s_lastAt;
 
-		static bool Prefix(ZRoutedRpc.RoutedRPCData rpcData)
+		// Chat text out of a "Say" (Talker: normal, whisper) or "ChatMessage" (shout, ping) routed RPC.
+		private static bool TryReadChat(ZRoutedRpc.RoutedRPCData data, out string text, out bool ping)
 		{
-			if (rpcData.m_methodHash != SayHash || !QoLPlugin.WorldReady() || !QoLPlugin.Settings.Enabled.Value)
-			{
-				return true;
-			}
-			string prefix = QoLPlugin.Settings.ChatPrefix.Value;
-			if (prefix.Length == 0)
-			{
-				return true;
-			}
-			string text;
-			ZPackage pkg = rpcData.m_parameters;
+			text = null;
+			ping = false;
+			ZPackage pkg = data.m_parameters;
 			try
 			{
 				pkg.SetPos(0);
-				pkg.ReadInt();
+				int type;
+				if (data.m_methodHash == SayHash)
+				{
+					type = pkg.ReadInt();
+				}
+				else
+				{
+					pkg.ReadVector3();
+					type = pkg.ReadInt();
+				}
 				new UserInfo().Deserialize(ref pkg);
 				text = pkg.ReadString();
+				ping = type == (int)Talker.Type.Ping;
+				return true;
 			}
 			catch (Exception)
 			{
-				return true;
+				return false;
 			}
 			finally
 			{
 				pkg.SetPos(0);
 			}
-			if (!text.StartsWith(prefix, StringComparison.Ordinal))
+		}
+
+		private static bool IsCommand(string text, out string command)
+		{
+			command = null;
+			string prefix = QoLPlugin.Settings.ChatPrefix.Value;
+			if (prefix.Length == 0 || text == null || !text.StartsWith(prefix, StringComparison.Ordinal))
 			{
-				return true;
+				return false;
 			}
-			ZNetPeer peer = ZNet.instance.GetPeer(rpcData.m_senderPeerID);
-			if (peer == null)
-			{
-				return true;
-			}
-			// One copy arrives per other player; handle the first, swallow the rest.
+			command = text.Substring(prefix.Length);
+			return true;
+		}
+
+		// One message arrives in several copies; only the first is acted on.
+		private static bool Seen(ZNetPeer peer, string text)
+		{
 			DateTime now = DateTime.UtcNow;
 			if (peer.m_uid == s_lastSender && text == s_lastText && (now - s_lastAt).TotalSeconds < 2)
 			{
-				return false;
+				return true;
 			}
 			s_lastSender = peer.m_uid;
 			s_lastText = text;
 			s_lastAt = now;
-			string reply = Run(peer, text.Substring(prefix.Length));
-			if (reply != null)
-			{
-				Messages.ToPeer(peer, MessageHud.MessageType.TopLeft, reply);
-			}
 			return false;
+		}
+
+		private static bool Ready()
+		{
+			return QoLPlugin.WorldReady() && QoLPlugin.Settings.Enabled.Value;
+		}
+
+		// The copy addressed to the server.
+		[HarmonyPatch(typeof(ZRoutedRpc), "HandleRoutedRPC")]
+		internal static class HandlePatch
+		{
+			static bool Prefix(ZRoutedRpc __instance, ZRoutedRpc.RoutedRPCData data)
+			{
+				if (!__instance.m_server || (data.m_methodHash != SayHash && data.m_methodHash != ChatMessageHash) || !Ready())
+				{
+					return true;
+				}
+				if (data.m_senderPeerID == __instance.m_id || !TryReadChat(data, out string text, out bool ping) || ping)
+				{
+					return true;
+				}
+				ZNetPeer peer = ZNet.instance.GetPeer(data.m_senderPeerID);
+				if (peer == null)
+				{
+					return true;
+				}
+				if (!IsCommand(text, out string command))
+				{
+					if (QoLPlugin.Settings.ChatLog.Value)
+					{
+						QoLPlugin.Log.LogInfo($"Chat: {peer.m_playerName}: {text}");
+					}
+					return false;
+				}
+				if (!Seen(peer, text))
+				{
+					Reply(peer, Run(peer, command));
+				}
+				return false;
+			}
+		}
+
+		// The copies for the other players: a command is not passed on.
+		[HarmonyPatch(typeof(ZRoutedRpc), "RouteRPC")]
+		internal static class RoutePatch
+		{
+			static bool Prefix(ZRoutedRpc __instance, ZRoutedRpc.RoutedRPCData rpcData)
+			{
+				if (!__instance.m_server || (rpcData.m_methodHash != SayHash && rpcData.m_methodHash != ChatMessageHash) || !Ready())
+				{
+					return true;
+				}
+				if (rpcData.m_senderPeerID == __instance.m_id || !TryReadChat(rpcData, out string text, out bool ping) || ping || !IsCommand(text, out string command))
+				{
+					return true;
+				}
+				ZNetPeer peer = ZNet.instance.GetPeer(rpcData.m_senderPeerID);
+				if (peer != null && !Seen(peer, text))
+				{
+					Reply(peer, Run(peer, command));
+				}
+				return false;
+			}
 		}
 
 		[HarmonyPatch(typeof(ZNet), "RPC_RemoteCommand")]
@@ -92,13 +163,12 @@ namespace SarkasticQoL
 		{
 			static bool Prefix(ZNet __instance, ZRpc rpc, string command)
 			{
-				if (!QoLPlugin.WorldReady() || !QoLPlugin.Settings.Enabled.Value)
+				if (!Ready())
 				{
 					return true;
 				}
 				string text = (command ?? "").Trim();
-				string first = text.Split(' ')[0].ToLowerInvariant();
-				if (first != "sleep")
+				if (text.Split(' ')[0].ToLowerInvariant() != "sleep")
 				{
 					return true;
 				}
@@ -110,10 +180,18 @@ namespace SarkasticQoL
 				string reply = Run(peer, text);
 				if (reply != null)
 				{
-					Messages.ToPeer(peer, MessageHud.MessageType.TopLeft, reply);
+					Reply(peer, reply);
 					__instance.RemotePrint(rpc, reply);
 				}
 				return false;
+			}
+		}
+
+		private static void Reply(ZNetPeer peer, string reply)
+		{
+			if (reply != null)
+			{
+				Messages.Reply(peer, reply);
 			}
 		}
 
@@ -158,8 +236,8 @@ namespace SarkasticQoL
 
 		private static string Help(string p)
 		{
-			return $"/sleep (vote to skip the night; on|off) | {p}ballista players|tames on|off (the one next to you) | {p}door auto on|off | {p}tame on|off"
-				+ $" -- {p}commands reach the server only while another player is online";
+			string help = $"{p}sleep or /sleep: vote to skip the night (on|off) | {p}ballista players|tames on|off: the one next to you | {p}door auto on|off | {p}tame on|off";
+			return ServerPresence.Enabled ? help : help + $" -- {p}commands reach the server only while another player is online";
 		}
 
 		private static bool? OnOff(string word)

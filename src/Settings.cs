@@ -18,6 +18,11 @@ namespace SarkasticQoL
 		public readonly ConfigEntry<string> ChatPrefix;
 		public readonly ConfigEntry<float> ScanSeconds;
 
+		public readonly ConfigEntry<bool> ChatServerPresence;
+		public readonly ConfigEntry<string> ChatServerName;
+		public readonly ConfigEntry<bool> ChatReplyInChat;
+		public readonly ConfigEntry<bool> ChatLog;
+
 		public readonly ConfigEntry<string> MotdText;
 		public readonly ConfigEntry<float> MotdDelaySeconds;
 
@@ -53,6 +58,15 @@ namespace SarkasticQoL
 				"What a chat message must start with to be a command for this plugin. Such messages are not shown to other players. (A leading / never leaves the client.)");
 			ScanSeconds = config.Bind("General", "ScanSeconds", 2f,
 				"How often (seconds) the objects around each player are looked at: doors, ballistas, tames, containers.");
+
+			ChatServerPresence = config.Bind("Chat", "ServerPresence", true,
+				"List the server as a player, under the name below. A Valheim client sends its chat only to the players in that list, so this is what makes chat commands reach the server when a player is alone, and what lets replies appear as chat lines. The name shows in the players list; there is no map pin.");
+			ChatServerName = config.Bind("Chat", "ServerName", "Server",
+				"The server's name in the player list and in front of its chat lines.");
+			ChatReplyInChat = config.Bind("Chat", "ReplyInChat", true,
+				"Answer commands in the chat (needs ServerPresence). Off: at the top left of the screen, where it fades after a few seconds.");
+			ChatLog = config.Bind("Chat", "Log", true,
+				"Write the players' chat to the server log (needs ServerPresence to see it at all).");
 
 			MotdText = config.Bind("Motd", "Text", "",
 				"Shown in the middle of a player's screen after they log in. Empty = nothing. Use | for a line break.");

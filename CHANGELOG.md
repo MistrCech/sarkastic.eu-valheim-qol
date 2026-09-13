@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.2] - 2026-09-13
+
+### Added
+
+- The server appears in the player list under `[Chat] ServerName` (`Server`). A Valheim client
+  sends its chat only to the listed players, so this makes every chat message reach the server --
+  a player alone can use `!` commands -- and lets the server answer as a chat line under that name
+  (`[Chat] ReplyInChat`), instead of a top-left message that fades. Ordinary chat is written to the
+  server log (`[Chat] Log`). Verified on a local 1.0.12 server with fake peers: the list carries the
+  entry with the server's peer id as its character, a chat message addressed to the server is
+  handled, the reply arrives as a `ChatMessage` from that entry.
+
 ## [0.1.1] - 2026-09-13
 
 ### Fixed
