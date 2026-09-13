@@ -36,7 +36,7 @@ namespace SarkasticQoL
 		public readonly ConfigEntry<bool> LabelsEnabled;
 		public readonly ConfigEntry<bool> LabelsDefault;
 		public readonly ConfigEntry<int> LabelsMaxItems;
-		public readonly ConfigEntry<string> LabelsEmptyText;
+		public readonly ConfigEntry<float> LabelsRefreshSeconds;
 		public readonly ConfigEntry<bool> ClocksEnabled;
 		public readonly ConfigEntry<int> ClockStepMinutes;
 		public readonly ConfigEntry<string> ClockFormat;
@@ -128,14 +128,14 @@ namespace SarkasticQoL
 			FeedShowText = config.Bind("Feeding", "ShowText", true,
 				"Show '+N item' above the station to players nearby when it is fed.");
 
-			LabelsEnabled = config.Bind("Signs", "Labels", true,
-				"A sign in front of a chest that lists its contents, kept up to date. A player switches it on for one chest with !label on.");
-			LabelsDefault = config.Bind("Signs", "LabelsDefault", false,
-				"Every player-built chest gets a label unless switched off with !label off.");
-			LabelsMaxItems = config.Bind("Signs", "LabelsMaxItems", 3,
-				new ConfigDescription("How many kinds of item the label names (the most numerous first); the rest is a count.", new AcceptableValueRange<int>(1, 8)));
-			LabelsEmptyText = config.Bind("Signs", "LabelsEmptyText", "empty",
-				"What the label says when the chest is empty.");
+			LabelsEnabled = config.Bind("Labels", "Enabled", true,
+				"A chest named after its contents ('Coal 156', 'Wood 240, Stone 120 +2'), where the game shows the chest's name: when a player looks at it and as the title of the opened chest, in the player's own language. A player switches it on for one chest with !label on.");
+			LabelsDefault = config.Bind("Labels", "Default", false,
+				"Every player-built chest is named after its contents unless switched off with !label off.");
+			LabelsMaxItems = config.Bind("Labels", "MaxItems", 3,
+				new ConfigDescription("How many kinds of item the name lists (the most numerous first); the rest is a count.", new AcceptableValueRange<int>(1, 8)));
+			LabelsRefreshSeconds = config.Bind("Labels", "RefreshSeconds", 10f,
+				"The game reads a chest's name only when it creates the chest, so a renamed chest is created afresh and blinks for a moment on every client nearby. At most this often per chest, and never while somebody has it open.");
 			ClocksEnabled = config.Bind("Signs", "Clocks", true,
 				"A sign can show the in-game day and time: !clock on next to it.");
 			ClockStepMinutes = config.Bind("Signs", "ClockStepMinutes", 10,

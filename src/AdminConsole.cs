@@ -85,7 +85,7 @@ namespace SarkasticQoL
 			ConfigDefinition definition = new ConfigDefinition(key.Substring(0, dot), key.Substring(dot + 1));
 			if (!QoLPlugin.Settings.File.ContainsKey(definition))
 			{
-				return $"no setting {key}; sections: General, Chat, Guards, Feeding, Signs, Sorting, Motd, Sleep, Doors, Ballistas, Tames, Containers, Prefabs, Pins";
+				return $"no setting {key}; sections: General, Chat, Guards, Feeding, Labels, Signs, Sorting, Motd, Sleep, Doors, Ballistas, Tames, Containers, Prefabs, Pins";
 			}
 			ConfigEntryBase entry = QoLPlugin.Settings.File[definition];
 			try

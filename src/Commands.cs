@@ -251,7 +251,7 @@ namespace SarkasticQoL
 
 		private static string Help(string p)
 		{
-			string help = $"{p}sleep (vote to skip the night) | next to a piece: {p}ballista players|tames on|off, {p}door auto on|off, {p}feed on|off, {p}fire feed on|off, {p}label on|off, {p}sort on|off, {p}clock on|off | {p}tame on|off | {p}pins on|off (what you find goes on the map tables)";
+			string help = $"{p}sleep (vote to skip the night) | next to a piece: {p}ballista players|tames on|off, {p}door auto on|off, {p}feed on|off, {p}fire feed on|off, {p}label on|off (chest named after its contents), {p}sort on|off, {p}clock on|off | {p}tame on|off | {p}pins on|off (what you find goes on the map tables)";
 			return ServerPresence.Enabled ? help : help + $" -- {p}commands reach the server only while another player is online";
 		}
 
@@ -349,14 +349,10 @@ namespace SarkasticQoL
 			bool? on = words.Length >= 2 ? OnOff(words[1]) : null;
 			if (on == null)
 			{
-				return $"This chest has a label sign: {(Labels.Wanted(chest) ? "on" : "off")}. Change with label on|off";
+				return $"This chest is named after its contents: {(Labels.Wanted(chest) ? "on" : "off")}. Change with label on|off";
 			}
 			chest.Set(Labels.LabelKey, on.Value);
-			if (!on.Value)
-			{
-				Labels.Remove(chest, Labels.SignFor(chest));
-			}
-			return on.Value ? "This chest gets a label sign in a moment" : "Label sign removed";
+			return on.Value ? "This chest is named after its contents in a moment (close it first)" : "This chest gets its own name back in a moment";
 		}
 
 		private static string Toggle(ZNetPeer peer, string feature, string[] words, string what)

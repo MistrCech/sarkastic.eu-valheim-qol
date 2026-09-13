@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.1] - 2026-09-13
+
+### Changed
+
+- Chest labels no longer place a sign; the chest itself is named after its contents ("Coal 156",
+  "Wood 240, Stone 120 +2"), shown when a player looks at it and as the title of the opened chest,
+  in each player's language. The name is a per-object field override (`Container.m_name`), which
+  the game reads when it creates the chest, so a chest whose contents changed is created afresh
+  (a blink): never while it is open, at most every `[Labels] RefreshSeconds` (10). An empty chest
+  has its own name. The 0.2.0 label signs still in the world are removed. Settings moved from
+  `[Signs] Labels*` to `[Labels]`; `LabelsEmptyText` is gone.
+
 ## [0.3.0] - 2026-09-13
 
 ### Added

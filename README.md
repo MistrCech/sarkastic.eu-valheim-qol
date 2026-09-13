@@ -14,7 +14,8 @@ small conveniences for the players, all switchable, none of them needing anythin
 - **Stations feed themselves** from the chests next to them: ore and fuel for smelters, kilns,
   windmills, spinning wheels and blast furnaces, fuel for shield generators, and for fireplaces if
   a player switches a fire on.
-- **Chest labels**: a sign in front of a chest that lists what is inside, kept up to date.
+- **Chest labels**: a chest named after what is inside ("Coal 156"), where the game shows its
+  name, in each player's language.
 - **Clocks**: a sign that shows the in-game day and time.
 - **Tidy chests**: a chest that merges its stacks and sorts itself whenever it changed.
 - **Map pins on the cartography tables** for what players have found nearby: clusters of berries
@@ -40,7 +41,7 @@ from **Server** (the name is configurable).
 | `!tame on\|off` | Whether you see taming, hatching and growing progress. |
 | `!feed on\|off` | The smelter, kiln, windmill, spinning wheel, blast furnace or shield generator next to you: feed itself from chests within 4 m. On by default. |
 | `!fire feed on\|off` | The fireplace, hearth or torch next to you: feed itself from chests within 4 m. Off by default, since every fire in a base would eat the wood next to it. |
-| `!label on\|off` | A sign in front of the chest next to you listing its contents ("Wood 240 | Stone 120 | Copper ore 30 | +4"). |
+| `!label on\|off` | The chest next to you is named after its contents ("Coal 156", "Wood 240, Stone 120, Copper ore 30 +4") when a player looks at it and as the title of the opened chest. It blinks for a moment when the name changes; never while it is open, at most every 10 s. An empty chest, or off, has its own name again. |
 | `!clock on\|off` | The sign next to you shows the day and time ("Day 44 - 19:10"). |
 | `!sort on\|off` | The chest next to you keeps itself sorted: stacks merged, items by name, from the top left. |
 | `!pins on\|off` | Whether what you find goes on the map tables. Read a table to get the pins; hide a kind of pin with the map's icon filter; delete one and write the table to take it off every table for good. |
@@ -90,7 +91,7 @@ it; edit the config file and restart instead.
 | `[Containers] <prefab>` | the game's size | One entry per buildable container appears once the world is loaded, `WIDTHxHEIGHT`, at most 8 wide. A container is only shrunk when its items fit. |
 | `[Feeding] Smelters`, `Fireplaces` | true, false | Defaults for stations nobody set with `!feed` / `!fire feed`. |
 | `[Feeding] Range`, `PlayerDistance`, `LeaveAtLeast`, `ShowText` | 4, 4, 1, true | Chests within Range are used, only when it is below half, never while a player is within PlayerDistance of the station or has the chest open; LeaveAtLeast of each item stays; "+N item" floats above the station. |
-| `[Signs] LabelsDefault`, `LabelsMaxItems`, `LabelsEmptyText` | false, 3, `empty` | Whether every chest gets a label, how many kinds it names. |
+| `[Labels] Default`, `MaxItems`, `RefreshSeconds` | false, 3, 10 | Whether every chest is named after its contents, how many kinds the name lists, how often at most a chest is renamed (each rename creates it afresh: a blink). |
 | `[Signs] ClockStepMinutes`, `ClockFormat` | 10, `Day {0} - {1:00}:{2:00}` | The clock's resolution (a sign update for everyone nearby per step) and text. |
 | `[Sorting] Default` | false | Whether every chest sorts itself. |
 | `[Guards] PersistentEventsAdminOnly` | true | Only admins and the game may start or stop persistent world events (`/pevents`, open to everyone in 1.0.12). |
@@ -113,12 +114,11 @@ Everything goes through what a vanilla client already understands:
 
 - **The objects' data.** A door's open/closed state, a ballista's per-piece choice, a container's
   items, a smelter's fuel and ore queue, a sign's text: the server changes the world object's data
-  and every client shows the result. A label sign is an ordinary sign piece the server creates,
-  with no creator (so it counts as nothing player-built), not removable with the hammer, no wear,
-  and its own settling physics off.
+  and every client shows the result.
 - **Per-object field overrides.** The game lets a world object override the public fields of its
   own components (`ZNetView.LoadFields`: `HasFields`, `HasFields<Component>`,
-  `<Component>.<field>`), which every client applies when it creates the object. Container sizes
+  `<Component>.<field>`), which every client applies when it creates the object. Container sizes,
+  chest labels (`Container.m_name`, translated by the client since it holds the game's name keys)
   and the field override file use this; an object that is already loaded is created afresh under a
   new id so the change shows at once.
 - **The game's own messages.** `ShowMessage` for the top-left and centre texts, `RPC_DamageText`
