@@ -4,7 +4,7 @@
     <AssemblyName>SarkasticEU_QoL</AssemblyName>
     <RootNamespace>SarkasticQoL</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>0.3.2</Version>
+    <Version>0.4.0</Version>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <OutputPath>$(MSBuildThisFileDirectory)../bin/$(Configuration)/</OutputPath>
     <!-- Path to a Valheim dedicated server with BepInEx: environment variable VALHEIM_DEDI_INSTALL or -p:ValheimServerDir=... -->

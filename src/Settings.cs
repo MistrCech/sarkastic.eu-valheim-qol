@@ -74,6 +74,7 @@ namespace SarkasticQoL
 		public readonly ConfigEntry<string> PrefabsFile;
 
 		public readonly ConfigEntry<bool> PinsEnabled;
+		public readonly ConfigEntry<bool> PinsSharedTables;
 		public readonly ConfigEntry<bool> PinsPickables;
 		public readonly ConfigEntry<bool> PinsOres;
 		public readonly ConfigEntry<bool> PinsDungeons;
@@ -200,7 +201,9 @@ namespace SarkasticQoL
 				"In BepInEx/config. One override per line: <prefab> <Component>.<field> <value>, e.g. piece_workbench CraftingStation.m_rangeBuild 20. Lines starting with # are comments. Applied to objects the game loads; `qol reload` re-reads it.");
 
 			PinsEnabled = config.Bind("Pins", "Enabled", true,
-				"Cartography tables get pins for what players have found near them: clusters of berries and mushrooms, ore deposits, dungeon entrances, portals. Players read them off a table as usual, can hide a pin type in the map's icon filter, and a pin a player deletes and writes back to a table stays gone. Works with vanilla clients.");
+				"A player's own map gets a pin for what they have been near: clusters of berries and mushrooms, ore deposits, dungeon entrances, portals. Given the way a runestone gives a pin: it is the player's own, theirs to delete, on nobody else's map unless they write a cartography table themselves. Works with vanilla clients.");
+			PinsSharedTables = config.Bind("Pins", "SharedTables", false,
+				"Also write every pin into every cartography table, so whoever reads a table gets them all (the pins show as another player's; one deleted and written back to a table stays gone). Off: tables are left to the players, and any of our pins in them are taken out.");
 			PinsPickables = config.Bind("Pins", "Pickables", true, "Pins for clusters of the pickables listed in PickableNames.");
 			PinsOres = config.Bind("Pins", "Ores", true, "Pins for the ore deposits listed in OreNames, one per deposit.");
 			PinsDungeons = config.Bind("Pins", "Dungeons", true, "Pins for the locations listed in DungeonNames (dungeon entrances, the trader).");

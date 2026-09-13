@@ -251,7 +251,9 @@ namespace SarkasticQoL
 				case "sort":
 					return PieceToggle(peer, World.Kind.Container, "chest", Sorting.SortKey, words, 1, Sorting.Wanted, "keeps itself sorted");
 				case "pins":
-					return Toggle(peer, "pins", words, "Putting what you find (berries, ore, dungeons, portals) on the map tables") + ". Read a table to get them; hide a kind of pin in the map's icon filter; delete one and write the table to take it off for good";
+					return words.Length >= 2 && words[1].ToLowerInvariant() == "reset"
+						? Pins.ForgetPlayer(peer)
+						: Toggle(peer, "pins", words, "Pins on your map for what you come near (berries, ore, dungeons, portals)") + ". They are your own pins: delete what you do not want, it will not come back; pins reset gives the ones near you once more";
 				case "deaths":
 				case "deathlog":
 					return Deaths(words);
@@ -262,7 +264,7 @@ namespace SarkasticQoL
 
 		private static string Help(string p)
 		{
-			string help = $"{p}sleep (vote to skip the night) | next to a piece: {p}ballista players|tames on|off, {p}door auto on|off, {p}feed on|off, {p}fire feed on|off, {p}label on|off (chest named after its contents), {p}sort on|off, {p}clock on|off | {p}tame on|off | {p}pins on|off (what you find goes on the map tables) | {p}deaths [n] (what killed the tamed animals)";
+			string help = $"{p}sleep (vote to skip the night) | next to a piece: {p}ballista players|tames on|off, {p}door auto on|off, {p}feed on|off, {p}fire feed on|off, {p}label on|off (chest named after its contents), {p}sort on|off, {p}clock on|off | {p}tame on|off | {p}pins on|off|reset (pins on your map for what you come near) | {p}deaths [n] (what killed the tamed animals)";
 			return ServerPresence.Enabled ? help : help + $" -- {p}commands reach the server only while another player is online";
 		}
 

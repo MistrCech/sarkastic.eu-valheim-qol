@@ -18,9 +18,9 @@ small conveniences for the players, all switchable, none of them needing anythin
   name, in each player's language.
 - **Clocks**: a sign that shows the in-game day and time.
 - **Tidy chests**: a chest that merges its stacks and sorts itself whenever it changed.
-- **Map pins on the cartography tables** for what players have found nearby: clusters of berries
-  and mushrooms ("Raspberries x7"), ore deposits, dungeon entrances, portals. Read off a table as
-  usual; a pin a player deletes and writes back stays gone.
+- **Map pins** on a player's own map for what they come near: clusters of berries and mushrooms
+  ("BB x7"), ore deposits, dungeon entrances, portals. Given the way a runestone gives a pin, so
+  they are the player's own to keep or delete, and on nobody else's map.
 - **Message of the day** after logging in.
 - **A guard** for a hole in the game: persistent world events, which any player could start or stop with `/pevents` in 1.0.12, are admin-only.
 
@@ -45,7 +45,7 @@ from **Server** (the name is configurable).
 | `!clock on\|off` | The sign next to you shows the day and time ("Day 44 - 19:10"). |
 | `!sort on\|off` | The chest next to you keeps itself sorted: stacks merged, items by name, from the top left. |
 | `!deaths [n]` | What killed the tamed creatures: the latest five (up to ten), with the creature or player behind the last blow, or burning, smoke, a fall, drowning ..., how long ago and where. |
-| `!pins on\|off` | Whether what you find goes on the map tables. Read a table to get the pins; hide a kind of pin with the map's icon filter; delete one and write the table to take it off every table for good. |
+| `!pins on\|off\|reset` | Pins on your own map for what you come near (within 30 m). They are your own pins: delete one and it does not come back; `reset` gives the ones near you once more. |
 
 How that works: a Valheim client sends its chat only to the players in the player list it got
 from the server, one copy each, never to the server itself. So the plugin lists the server as a
@@ -99,17 +99,18 @@ it; edit the config file and restart instead.
 | `[Sorting] Default` | false | Whether every chest sorts itself. |
 | `[Guards] PersistentEventsAdminOnly` | true | Only admins and the game may start or stop persistent world events (`/pevents`, open to everyone in 1.0.12). |
 | `[Prefabs] File` | `sarkasticeu.qol.prefabs.txt` | One override per line: `<prefab> <Component>.<field> <value>`, e.g. `piece_workbench CraftingStation.m_rangeBuild 20`. |
-| `[Pins] Pickables`, `Ores`, `Dungeons`, `Portals` | true | Which kinds of pin are made. Switching one off takes its pins off the tables. |
+| `[Pins] SharedTables` | false | Also write every pin into every cartography table, so whoever reads a table gets them all (as another player's pins; one deleted and written back stays gone). Off: the tables are left to the players and any of our pins in them are taken out. |
+| `[Pins] Pickables`, `Ores`, `Dungeons`, `Portals` | true | Which kinds of pin are made. |
 | `[Pins] DiscoverRange` | 30 | A thing is found once a player has been within this many metres of it. |
 | `[Pins] ClusterRadius`, `ClusterMin` | 24, 3 | Pickables of one kind this close to each other form one cluster, pinned at its centre, if there are at least this many. |
 | `[Pins] FarmDistance` | 20 | No pickable pins this close to a player-built piece (a farm, a base). |
-| `[Pins] WriteSeconds`, `MaxPins` | 60, 1500 | A table is rewritten at most this often and only when its pins changed; no more pins than this. |
+| `[Pins] WriteSeconds`, `MaxPins` | 60, 1500 | With SharedTables: a table is rewritten at most this often and only when its pins changed. No more pins than this in all. |
 | `[Pins] PickableNames`, `OreNames`, `DungeonNames`, `PortalName` | BB, CB, LB, Rasp, Mush, YMush, BMush, Magecap, Jotun, Thistle, Dand, Fiddle, Smoke, Sn, Obs, Tar, Barley, Flax; Cu, Ag, Flametal; Crypt, Sunken crypt (Fe), Troll cave, Frost cave, Mine, Hildir ..., Haldor; `Portal {0}` | What is pinned and what the pin says, `<prefab>=<name>` lists (short, so the map stays readable). A change renames the existing pins too; `qol pins` names any entry the game does not know. |
 | `[Pins] PickablesIcon`, `OresIcon`, `DungeonsIcon`, `PortalsIcon` | dot, hammer, house, portal | The map icon per kind (fire, house, hammer, dot, portal). |
 | `[Pins] MapTextureSize` | 2048 | Only for a table nobody has written yet, when the game does not say: the map's size in pixels along a side. A wrong size makes clients ignore the table. |
 
-Every feature has its own `Enabled`. The pins and the ones players removed are kept in
-`BepInEx/config/sarkasticeu.qol.pins.<world>.txt`.
+Every feature has its own `Enabled`. The pins, what each player has had, and the ones players
+removed from tables are kept in `BepInEx/config/sarkasticeu.qol.pins.<world>.txt`.
 
 ## How it works
 
@@ -126,11 +127,15 @@ Everything goes through what a vanilla client already understands:
   new id so the change shows at once.
 - **The game's own messages.** `ShowMessage` for the top-left and centre texts, `RPC_DamageText`
   for text floating in the world.
-- **The tables' data.** A cartography table holds what a client wrote to it (`MapTable`,
-  `Minimap.GetSharedMapData`): the explored map and the pins, each with an owner id. The server
-  rewrites a table with its own pins under an owner id no player has, keeping everything the
-  players wrote as it is (and checking nobody changed the table meanwhile; the decompressing and
-  compressing of the map happens off the main thread). A client treats such pins as another
+- **A runestone's pin.** The server gives a player a pin with the routed RPC a runestone's
+  response uses (`Game.RPC_DiscoverLocationResponse`): the client adds it as the player's own saved
+  pin, silently while a map is shown. There is no RPC to take one away, so a pin stays until the
+  player deletes it, and the server remembers per player what it gave so nothing comes twice.
+- **The tables' data** (with `SharedTables`). A cartography table holds what a client wrote to it
+  (`MapTable`, `Minimap.GetSharedMapData`): the explored map and the pins, each with an owner id.
+  The server rewrites a table with its own pins under an owner id no player has, keeping everything
+  the players wrote as it is (and checking nobody changed the table meanwhile; the decompressing
+  and compressing of the map happens off the main thread). A client treats such pins as another
   player's: shows them, lets a player delete one, and drops them again when a later read no longer
   lists them. A pin missing from a table a player wrote is one they deleted, and is not made again.
 - **Five patched methods:** the sleep vote (`Game.EverybodyIsTryingToSleep`), the server's entry

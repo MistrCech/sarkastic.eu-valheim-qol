@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0] - 2026-09-13
+
+### Changed
+
+- Pins go on each player's own map instead of the cartography tables: a player who comes within
+  30 m of something gets its pin the way a runestone gives one (`Game.RPC_DiscoverLocationResponse`),
+  as their own saved pin -- theirs to delete, on nobody else's map unless they write a table
+  themselves. What each player has had is remembered per world, so a pin they deleted is not
+  given again; `!pins reset` gives the ones near them once more, `!pins off` stops them. The tables
+  are left to the players; `[Pins] SharedTables` (off) brings the old behaviour back, and with it
+  off any pins of ours still in a table are taken out, so a player who reads a table loses the
+  ones they got from it before. A vanilla client with a map shown adds such a pin silently (only a
+  world without a map turns the player to face it).
+
 ## [0.3.2] - 2026-09-13
 
 ### Added

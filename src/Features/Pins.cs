@@ -98,6 +98,9 @@ namespace SarkasticQoL.Features
 		private static readonly Dictionary<ZDOID, Table> s_tables = new Dictionary<ZDOID, Table>();
 		private static readonly HashSet<string> s_desired = new HashSet<string>();
 		private static int s_pinsVersion, s_desiredVersion = -1;
+		private static bool s_desiredShared;
+		// Per player (platform id): the keys of the pins put on their map.
+		private static readonly Dictionary<string, HashSet<string>> s_sent = new Dictionary<string, HashSet<string>>();
 		private static int s_learnedTextureSize;
 		private static int s_reading;
 		private static bool s_saveDue, s_maxReported;
@@ -128,6 +131,7 @@ namespace SarkasticQoL.Features
 		{
 			s_pins.Clear();
 			s_removed.Clear();
+			s_sent.Clear();
 			s_tables.Clear();
 			s_pickableRaw = s_oreRaw = s_dungeonRaw = null;
 			s_learnedTextureSize = 0;
@@ -450,12 +454,65 @@ namespace SarkasticQoL.Features
 				if (Enabled)
 				{
 					Clusters(peer);
+					Deliver(peer);
 				}
 			}
 			finally
 			{
 				s_peer = null;
 			}
+		}
+
+		/*
+			The player's own map gets every pin they have been near and not had yet, the way a
+			runestone gives one: Game.RPC_DiscoverLocationResponse adds it as the player's own saved
+			pin (theirs to keep or delete, on nobody else's map unless they write a table). A client
+			with a map shown (the usual case; only a world without a map turns the player to face the
+			spot) adds it silently. What each player has had is remembered, so a pin they deleted is
+			not given again; !pins reset forgets that.
+		*/
+		private static void Deliver(ZNetPeer peer)
+		{
+			if (peer.m_characterID.IsNone() || !World.Players.Wants(peer, "pins"))
+			{
+				return;
+			}
+			float range = QoLPlugin.Settings.PinsDiscoverRange.Value;
+			Vector3 at = World.Position(peer);
+			HashSet<string> had = SentTo(PlayerState.IdOf(peer));
+			List<string> names = null;
+			foreach (Pin pin in s_pins)
+			{
+				if (!CategoryOn(pin.category) || (pin.pos - at).sqrMagnitude > range * range || !had.Add(pin.Key))
+				{
+					continue;
+				}
+				ZRoutedRpc.instance.InvokeRoutedRPC(peer.m_uid, "RPC_DiscoverLocationResponse", pin.name, (int)pin.type, pin.pos, false);
+				(names ?? (names = new List<string>())).Add(pin.name);
+			}
+			if (names != null)
+			{
+				s_saveDue = true;
+				QoLPlugin.Log.LogInfo($"Pins: {names.Count} to {peer.m_playerName}'s map: {string.Join(", ", names)}");
+			}
+		}
+
+		private static HashSet<string> SentTo(string playerId)
+		{
+			if (!s_sent.TryGetValue(playerId, out HashSet<string> set))
+			{
+				s_sent[playerId] = set = new HashSet<string>();
+			}
+			return set;
+		}
+
+		// !pins reset: the pins near the player come once more.
+		public static string ForgetPlayer(ZNetPeer peer)
+		{
+			int n = s_sent.TryGetValue(PlayerState.IdOf(peer), out HashSet<string> set) ? set.Count : 0;
+			s_sent.Remove(PlayerState.IdOf(peer));
+			s_saveDue = true;
+			return n == 0 ? "You had no pins from the server yet" : $"Forgotten which {n} pins you had; those near you come again in a moment";
 		}
 
 		private static void Clusters(ZNetPeer peer)
@@ -671,13 +728,16 @@ namespace SarkasticQoL.Features
 				CheckObjects();
 				DropDisabled();
 			}
-			if (s_desiredVersion != s_pinsVersion)
+			bool shared = QoLPlugin.Settings.PinsSharedTables.Value;
+			if (s_desiredVersion != s_pinsVersion || s_desiredShared != shared)
 			{
 				s_desiredVersion = s_pinsVersion;
+				s_desiredShared = shared;
 				s_desired.Clear();
 				foreach (Pin pin in s_pins)
 				{
-					if (CategoryOn(pin.category))
+					// With sharing off nothing of ours belongs in a table: one that has our pins is rewritten without them.
+					if (shared && CategoryOn(pin.category))
 					{
 						s_desired.Add(pin.Key);
 					}
@@ -1063,6 +1123,15 @@ namespace SarkasticQoL.Features
 			CultureInfo ic = CultureInfo.InvariantCulture;
 			foreach (string line in File.ReadAllLines(path))
 			{
+				if (line.StartsWith("sent "))
+				{
+					string[] sent = line.Split(new[] { ' ' }, 3, StringSplitOptions.RemoveEmptyEntries);
+					if (sent.Length == 3)
+					{
+						SentTo(sent[1]).Add(sent[2]);
+					}
+					continue;
+				}
 				string[] f = line.Split(new[] { ' ' }, 10, StringSplitOptions.RemoveEmptyEntries);
 				try
 				{
@@ -1096,7 +1165,7 @@ namespace SarkasticQoL.Features
 		{
 			s_saveDue = false;
 			CultureInfo ic = CultureInfo.InvariantCulture;
-			List<string> lines = new List<string> { "# Sarkastic.eu QoL map pins: pin|removed <category> <prefab> <x> <y> <z> <count> <icon> <object id> <name>" };
+			List<string> lines = new List<string> { "# Sarkastic.eu QoL map pins: pin|removed <category> <prefab> <x> <y> <z> <count> <icon> <object id> <name>; sent <player> <pin key>" };
 			foreach (Pin pin in s_pins)
 			{
 				lines.Add(Line("pin", pin, ic));
@@ -1104,6 +1173,13 @@ namespace SarkasticQoL.Features
 			foreach (Pin pin in s_removed)
 			{
 				lines.Add(Line("removed", pin, ic));
+			}
+			foreach (KeyValuePair<string, HashSet<string>> player in s_sent)
+			{
+				foreach (string key in player.Value)
+				{
+					lines.Add($"sent {player.Key} {key}");
+				}
 			}
 			try
 			{
@@ -1137,9 +1213,9 @@ namespace SarkasticQoL.Features
 			}
 			string unknown = Unknown();
 			return $"pins: {(Enabled ? "on" : "off")}; pickables {(s.PinsPickables.Value ? counts[0].ToString() : "off")}, ores {(s.PinsOres.Value ? counts[1].ToString() : "off")}, dungeons {(s.PinsDungeons.Value ? counts[2].ToString() : "off")}, portals {(s.PinsPortals.Value ? counts[3].ToString() : "off")}"
-				+ $"; {s_removed.Count} removed by players; {s_tables.Count} map tables ({withJobs} being written); map texture {TextureSize()}"
+				+ $"; on {s_sent.Count} players' maps; tables {(s.PinsSharedTables.Value ? $"shared, {s_removed.Count} removed by players" : "not written")}, {s_tables.Count} of them ({withJobs} being written); map texture {TextureSize()}"
 				+ (unknown.Length > 0 ? $"; unknown names in the config: {unknown}" : "")
-				+ "\nqol pins list [pickables|ores|dungeons|portals] | forget (let removed pins come back) | clear (take all pins off the tables)";
+				+ "\nqol pins list [pickables|ores|dungeons|portals] | forget (let pins removed from tables come back) | clear (drop every pin; players keep what is on their maps)";
 		}
 
 		public static string List(string category)
