@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.1] - 2026-09-13
+
+### Fixed
+
+- Chat commands never reached the server from a player who was alone: a Valheim client sends chat
+  only to the other players, never to the server. `!` commands now work while another player is
+  online (the first copy is handled, the rest swallowed), and the sleep vote moved to `/sleep`,
+  which rides on the game's own `sleep` console command that a client always forwards to the
+  server; taken over here for every player, not just admins. `/sleep` votes, `/sleep off`
+  withdraws, `/sleep ?` shows the state; a vote counts like being in bed.
+
 ## [0.1.0] - 2026-09-13
 
 First release. Chat commands (`!help`, `!ballista`, `!door`, `!tame`, `!sleep`), the `qol`

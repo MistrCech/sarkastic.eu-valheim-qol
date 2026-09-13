@@ -18,17 +18,22 @@ nothing else.
 
 ## How players use it
 
-Players type commands into the normal chat, starting with `!` (a message that starts with `/` never
-leaves a Valheim client). Such messages are not shown to other players; the reply appears at the
-top left of the sender's screen.
+Players type commands into the normal chat. The reply appears at the top left of their screen.
 
 | Command | |
 |---|---|
+| `/sleep` | Vote to skip the night (again: withdraw; `/sleep off`, `/sleep ?`). Works whenever you are online, alone or not. |
 | `!help` | Lists the commands. |
 | `!ballista players on\|off`, `!ballista tames on\|off` | The ballista next to you (within 5 m). Without on/off: shows its setting. |
 | `!door auto on\|off` | The door next to you. |
 | `!tame on\|off` | Whether you see taming, hatching and growing progress. |
-| `!sleep` | How the sleep vote stands. |
+
+Why two forms: a Valheim client sends chat only to the *other* players (one copy each, for the
+server to pass on) and never to the server itself, so a `!` message reaches the server only while
+another player is online, and is then handled and not passed on. The game's own `sleep` console
+command, on the other hand, is one of the few a client always forwards to the server (where the
+game would only let admins run it), so `/sleep` works alone too; typed in the chat it goes the
+same way.
 
 A choice for one piece is kept in that piece; a choice for yourself is kept on the server under
 your platform id.
@@ -79,9 +84,10 @@ Everything goes through what a vanilla client already understands:
   new id so the change shows at once.
 - **The game's own messages.** `ShowMessage` for the top-left and centre texts, `RPC_DamageText`
   for text floating in the world.
-- **One patched method** for the sleep vote (`Game.EverybodyIsTryingToSleep`), one to catch chat
-  commands before they are passed on (`ZRoutedRpc.RouteRPC`), one to notice a player's character
-  appearing (`ZNet.RPC_CharacterID`).
+- **Four patched methods:** the sleep vote (`Game.EverybodyIsTryingToSleep`), chat commands
+  caught before they are passed on (`ZRoutedRpc.RouteRPC`), `/sleep` taken over from the game's
+  admin-only console command (`ZNet.RPC_RemoteCommand`), and a player's character appearing
+  (`ZNet.RPC_CharacterID`).
 
 Every `ScanSeconds` the objects in the zones around one player per frame are handed to the
 features; a few thousand at most, and nothing is changed unless something differs.
