@@ -20,7 +20,7 @@ namespace SarkasticQoL
 	{
 		public const string GUID = "sarkasticeu.qol";
 		public const string PluginName = "Sarkastic.eu QoL";
-		public const string PluginVersion = "0.2.0";
+		public const string PluginVersion = "0.3.0";
 
 		internal static ManualLogSource Log;
 		internal static QoLPlugin Instance;

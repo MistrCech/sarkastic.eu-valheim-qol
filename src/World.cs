@@ -53,6 +53,16 @@ namespace SarkasticQoL
 			Sign = 256,
 			Piece = 512,
 			ShieldGenerator = 1024,
+			Location = 2048,
+			Portal = 4096,
+			MapTable = 8192,
+			PinObject = 16384, // a prefab named in the pins' lists (berries, ore deposits)
+		}
+
+		// Adds a kind to a prefab's, for the objects a feature picks by name (the pins' lists) rather than by component.
+		public static void Flag(int prefabHash, Kind kind)
+		{
+			s_kinds[prefabHash] = (s_kinds.TryGetValue(prefabHash, out Kind current) ? current : Kind.None) | kind;
 		}
 
 		public static void Start()
@@ -78,6 +88,9 @@ namespace SarkasticQoL
 				if (prefab.GetComponent<Sign>()) kind |= Kind.Sign;
 				if (prefab.GetComponent<Piece>()) kind |= Kind.Piece;
 				if (prefab.GetComponent<ShieldGenerator>()) kind |= Kind.ShieldGenerator;
+				if (prefab.GetComponent<LocationProxy>()) kind |= Kind.Location;
+				if (prefab.GetComponent<TeleportWorld>()) kind |= Kind.Portal;
+				if (prefab.GetComponent<MapTable>()) kind |= Kind.MapTable;
 				if (kind != Kind.None)
 				{
 					s_kinds[prefab.name.GetStableHashCode()] = kind;
@@ -93,6 +106,7 @@ namespace SarkasticQoL
 			Features.Add(new Labels());
 			Features.Add(new Clocks());
 			Features.Add(new Sorting());
+			Features.Add(new Pins());
 			foreach (IFeature feature in Features)
 			{
 				feature.Start();
@@ -119,6 +133,14 @@ namespace SarkasticQoL
 		public static void Tick(float dt)
 		{
 			Motd.Tick();
+			try
+			{
+				Pins.Tick(dt);
+			}
+			catch (Exception e)
+			{
+				QoLPlugin.Log.LogWarning($"Pins failed: {e}");
+			}
 			s_timer -= dt;
 			if (s_timer > 0f)
 			{
@@ -161,6 +183,10 @@ namespace SarkasticQoL
 			s_near.Clear();
 			s_retired.Clear();
 			ZDOMan.instance.FindSectorObjects(ZoneSystem.GetZone(at), s_zonesAround, s_near);
+			foreach (IFeature feature in Features)
+			{
+				(feature as IScanAware)?.BeginScan(peer);
+			}
 			foreach (ZDO zdo in s_near)
 			{
 				Kind kind = KindOf(zdo);
@@ -176,6 +202,10 @@ namespace SarkasticQoL
 						feature.Visit(zdo, kind, s_peers);
 					}
 				}
+			}
+			foreach (IFeature feature in Features)
+			{
+				(feature as IScanAware)?.EndScan(peer);
 			}
 		}
 
@@ -267,5 +297,12 @@ namespace SarkasticQoL
 		void Start();
 		void Stop();
 		void Visit(ZDO zdo, World.Kind kind, List<ZNetPeer> peers);
+	}
+
+	// A feature that looks at the objects around a player as a whole (clusters of bushes), not one by one.
+	internal interface IScanAware
+	{
+		void BeginScan(ZNetPeer peer);
+		void EndScan(ZNetPeer peer);
 	}
 }

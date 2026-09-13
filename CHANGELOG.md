@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0] - 2026-09-13
+
+### Added
+
+- Map pins on the cartography tables for what players have found within 30 m: clusters of
+  berries, mushrooms, thistle, dandelions, tin, obsidian, tar and the like (three or more of a kind
+  within 24 m, "Raspberries x7" at the centre; nothing within 20 m of a player-built piece), copper,
+  silver and flametal deposits, burial chambers, crypts, troll and frost caves, infested mines,
+  Hildir's places and Haldor, and player-built portals by their tag. Every table in the world gets
+  them; a client reads them off a table as usual. A pin a player deletes and writes back to a
+  table is taken off every table and not made again; a deposit that is mined out or a portal that
+  is gone loses its pin. `!pins on|off` per player (whether what they find is put on the tables),
+  `qol pins` for the admin (`list`, `forget`, `clear`), `[Pins]` in the config with the name lists,
+  icons and distances.
+
 ## [0.2.0] - 2026-09-13
 
 ### Added

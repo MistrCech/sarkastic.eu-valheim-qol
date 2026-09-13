@@ -41,6 +41,7 @@ namespace SarkasticQoL
 					return Status();
 				case "reload":
 					s.Reload();
+					Pins.Reload();
 					string prefabs = "";
 					foreach (IFeature feature in World.Features)
 					{
@@ -54,8 +55,10 @@ namespace SarkasticQoL
 					return args.Length >= 4 ? Set(args[2], string.Join(" ", args.Args, 3, args.Length - 3)) : "usage: qol set <Section.Key> <value>, e.g. qol set Sleep.RequiredPercent 50";
 				case "containers":
 					return Containers();
+				case "pins":
+					return PinsCommand(args);
 				default:
-					return "qol status | reload | set <Section.Key> <value> | containers";
+					return "qol status | reload | set <Section.Key> <value> | containers | pins";
 			}
 		}
 
@@ -68,7 +71,8 @@ namespace SarkasticQoL
 				+ $" | ballistas {(s.BallistasEnabled.Value ? $"players {s.BallistasTargetPlayers.Value}, tames {s.BallistasTargetTames.Value}" : "off")}"
 				+ $" | tame progress {(s.TamesProgress.Value ? "on" : "off")}"
 				+ $" | containers {(s.ContainersEnabled.Value ? "on" : "off")} | prefabs {(s.PrefabsEnabled.Value ? "on" : "off")}"
-				+ $" | motd {(s.MotdText.Value.Length > 0 ? "set" : "empty")}";
+				+ $" | motd {(s.MotdText.Value.Length > 0 ? "set" : "empty")}"
+				+ $" | pins {(s.PinsEnabled.Value ? $"{Pins.Count} on {Pins.TableCount} tables" : "off")}";
 		}
 
 		private static string Set(string key, string value)
@@ -81,7 +85,7 @@ namespace SarkasticQoL
 			ConfigDefinition definition = new ConfigDefinition(key.Substring(0, dot), key.Substring(dot + 1));
 			if (!QoLPlugin.Settings.File.ContainsKey(definition))
 			{
-				return $"no setting {key}; sections: General, Motd, Sleep, Doors, Ballistas, Tames, Containers, Prefabs";
+				return $"no setting {key}; sections: General, Chat, Guards, Feeding, Signs, Sorting, Motd, Sleep, Doors, Ballistas, Tames, Containers, Prefabs, Pins";
 			}
 			ConfigEntryBase entry = QoLPlugin.Settings.File[definition];
 			try
@@ -92,7 +96,26 @@ namespace SarkasticQoL
 			{
 				return $"{key}: '{value}' is not valid: {e.Message}";
 			}
+			if (definition.Section == "Pins")
+			{
+				Pins.Reload();
+			}
 			return $"{key} = {entry.GetSerializedValue()}";
+		}
+
+		private static string PinsCommand(Terminal.ConsoleEventArgs args)
+		{
+			switch (args.Length >= 3 ? args[2].ToLowerInvariant() : "")
+			{
+				case "list":
+					return Pins.List(args.Length >= 4 ? args[3] : null);
+				case "forget":
+					return Pins.Forget();
+				case "clear":
+					return Pins.Clear();
+				default:
+					return Pins.Status();
+			}
 		}
 
 		private static string Containers()

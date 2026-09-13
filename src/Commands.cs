@@ -242,6 +242,8 @@ namespace SarkasticQoL
 					return PieceToggle(peer, World.Kind.Sign, "sign", Clocks.ClockKey, words, 1, z => z.GetBool(Clocks.ClockKey), "shows the day and time");
 				case "sort":
 					return PieceToggle(peer, World.Kind.Container, "chest", Sorting.SortKey, words, 1, Sorting.Wanted, "keeps itself sorted");
+				case "pins":
+					return Toggle(peer, "pins", words, "Putting what you find (berries, ore, dungeons, portals) on the map tables") + ". Read a table to get them; hide a kind of pin in the map's icon filter; delete one and write the table to take it off for good";
 				default:
 					return $"Unknown command {p}{words[0]}. {p}help lists them";
 			}
@@ -249,7 +251,7 @@ namespace SarkasticQoL
 
 		private static string Help(string p)
 		{
-			string help = $"{p}sleep (vote to skip the night) | next to a piece: {p}ballista players|tames on|off, {p}door auto on|off, {p}feed on|off, {p}fire feed on|off, {p}label on|off, {p}sort on|off, {p}clock on|off | {p}tame on|off";
+			string help = $"{p}sleep (vote to skip the night) | next to a piece: {p}ballista players|tames on|off, {p}door auto on|off, {p}feed on|off, {p}fire feed on|off, {p}label on|off, {p}sort on|off, {p}clock on|off | {p}tame on|off | {p}pins on|off (what you find goes on the map tables)";
 			return ServerPresence.Enabled ? help : help + $" -- {p}commands reach the server only while another player is online";
 		}
 

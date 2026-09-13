@@ -71,6 +71,27 @@ namespace SarkasticQoL
 		public readonly ConfigEntry<bool> PrefabsEnabled;
 		public readonly ConfigEntry<string> PrefabsFile;
 
+		public readonly ConfigEntry<bool> PinsEnabled;
+		public readonly ConfigEntry<bool> PinsPickables;
+		public readonly ConfigEntry<bool> PinsOres;
+		public readonly ConfigEntry<bool> PinsDungeons;
+		public readonly ConfigEntry<bool> PinsPortals;
+		public readonly ConfigEntry<float> PinsDiscoverRange;
+		public readonly ConfigEntry<float> PinsClusterRadius;
+		public readonly ConfigEntry<int> PinsClusterMin;
+		public readonly ConfigEntry<float> PinsFarmDistance;
+		public readonly ConfigEntry<float> PinsWriteSeconds;
+		public readonly ConfigEntry<int> PinsMaxPins;
+		public readonly ConfigEntry<int> PinsMapTextureSize;
+		public readonly ConfigEntry<string> PinsPickableNames;
+		public readonly ConfigEntry<string> PinsOreNames;
+		public readonly ConfigEntry<string> PinsDungeonNames;
+		public readonly ConfigEntry<string> PinsPortalName;
+		public readonly ConfigEntry<string> PinsPickablesIcon;
+		public readonly ConfigEntry<string> PinsOresIcon;
+		public readonly ConfigEntry<string> PinsDungeonsIcon;
+		public readonly ConfigEntry<string> PinsPortalsIcon;
+
 		public Settings(ConfigFile config)
 		{
 			File = config;
@@ -171,6 +192,41 @@ namespace SarkasticQoL
 				"Apply the per-piece field overrides from the file below.");
 			PrefabsFile = config.Bind("Prefabs", "File", "sarkasticeu.qol.prefabs.txt",
 				"In BepInEx/config. One override per line: <prefab> <Component>.<field> <value>, e.g. piece_workbench CraftingStation.m_rangeBuild 20. Lines starting with # are comments. Applied to objects the game loads; `qol reload` re-reads it.");
+
+			PinsEnabled = config.Bind("Pins", "Enabled", true,
+				"Cartography tables get pins for what players have found near them: clusters of berries and mushrooms, ore deposits, dungeon entrances, portals. Players read them off a table as usual, can hide a pin type in the map's icon filter, and a pin a player deletes and writes back to a table stays gone. Works with vanilla clients.");
+			PinsPickables = config.Bind("Pins", "Pickables", true, "Pins for clusters of the pickables listed in PickableNames.");
+			PinsOres = config.Bind("Pins", "Ores", true, "Pins for the ore deposits listed in OreNames, one per deposit.");
+			PinsDungeons = config.Bind("Pins", "Dungeons", true, "Pins for the locations listed in DungeonNames (dungeon entrances, the trader).");
+			PinsPortals = config.Bind("Pins", "Portals", true, "Pins for player-built portals, named after their tag.");
+			PinsDiscoverRange = config.Bind("Pins", "DiscoverRange", 30f,
+				"A thing is found once a player has been within this many metres of it.");
+			PinsClusterRadius = config.Bind("Pins", "ClusterRadius", 24f,
+				new ConfigDescription("Pickables of one kind within this many metres of each other form one cluster, pinned at its centre.", new AcceptableValueRange<float>(4f, 64f)));
+			PinsClusterMin = config.Bind("Pins", "ClusterMin", 3,
+				new ConfigDescription("A cluster needs at least this many; lone bushes stay off the map.", new AcceptableValueRange<int>(1, 50)));
+			PinsFarmDistance = config.Bind("Pins", "FarmDistance", 20f,
+				"No pickable pins within this many metres of a player-built piece: a farm, or a base the players know anyway. 0 = pin them too.");
+			PinsWriteSeconds = config.Bind("Pins", "WriteSeconds", 60f,
+				"A table is rewritten at most every this many seconds, and only when its pins changed.");
+			PinsMaxPins = config.Bind("Pins", "MaxPins", 1500,
+				"No more pins than this in total; the map gets crowded and the tables' data grows.");
+			PinsMapTextureSize = config.Bind("Pins", "MapTextureSize", 2048,
+				"Size of the map (pixels along one side) a table without any data yet is given. Taken from the game or from a table with data whenever available; a wrong size makes clients ignore the table.");
+			PinsPickableNames = config.Bind("Pins", "PickableNames",
+				"RaspberryBush=Raspberries, BlueberryBush=Blueberries, CloudberryBush=Cloudberries, LingonberryBush=Lingonberries, Pickable_Mushroom=Mushrooms, Pickable_Mushroom_yellow=Yellow mushrooms, Pickable_Mushroom_blue=Blue mushrooms, Pickable_Mushroom_Magecap=Magecaps, Pickable_Mushroom_JotunPuffs=Jotun puffs, Pickable_Thistle=Thistle, Pickable_Dandelion=Dandelions, Pickable_Fiddlehead=Fiddleheads, Pickable_SmokePuff=Smoke puffs, Pickable_Tin=Tin, Pickable_Obsidian=Obsidian, Pickable_Tar=Tar, Pickable_Barley_Wild=Wild barley, Pickable_Flax_Wild=Wild flax",
+				"Pickables to pin as clusters: <prefab>=<pin name>, comma separated. The pin says '<name> x<count>'.");
+			PinsOreNames = config.Bind("Pins", "OreNames",
+				"rock4_copper=Copper, rock4_copper_frac=Copper, silvervein=Silver, silvervein_frac=Silver, MineRock_Meteorite=Flametal",
+				"Ore deposits to pin one by one: <prefab>=<pin name>. A deposit becomes its _frac prefab when first hit, so list both.");
+			PinsDungeonNames = config.Bind("Pins", "DungeonNames",
+				"Crypt2=Burial chamber, Crypt3=Burial chamber, Crypt4=Burial chamber, SunkenCrypt4=Sunken crypt, TrollCave02=Troll cave, MountainCave02=Frost cave, Mistlands_DvergrTownEntrance1=Infested mine, Mistlands_DvergrTownEntrance2=Infested mine, Hildir_crypt=Hildir's crypt, Hildir_cave=Hildir's cave, Hildir_plainsfortress=Hildir's fortress, Vendor_BlackForest=Haldor",
+				"Locations to pin: <location>=<pin name>. Boss altars are left to the game's own runestones.");
+			PinsPortalName = config.Bind("Pins", "PortalName", "Portal {0}", "Name of a portal's pin; {0} is its tag.");
+			PinsPickablesIcon = config.Bind("Pins", "PickablesIcon", "dot", "Icon of pickable pins: fire, house, hammer, dot, portal.");
+			PinsOresIcon = config.Bind("Pins", "OresIcon", "hammer", "Icon of ore pins: fire, house, hammer, dot, portal.");
+			PinsDungeonsIcon = config.Bind("Pins", "DungeonsIcon", "house", "Icon of dungeon pins: fire, house, hammer, dot, portal.");
+			PinsPortalsIcon = config.Bind("Pins", "PortalsIcon", "portal", "Icon of portal pins: fire, house, hammer, dot, portal.");
 		}
 
 		/*
