@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.2] - 2026-09-13
+
+### Added
+
+- `!deaths [n]`: what killed the tamed creatures, the latest five (up to ten) as chat lines --
+  "12 min ago: Boar 'Pepa' (lvl 2): attacked, 131 damage, by Wolf (lvl 3), at (-2451, 2522)".
+  Every death of a tamed creature is recorded with the creature or player behind the last blow,
+  or the kind of harm (burned, smoke, fell, drowned, froze, poisoned ...), and one taken out of the
+  world alive is recorded too; the latest `[Tames] DeathsKept` (50) are kept per world, and each
+  goes to the server log. `qol deaths [n]` for the admin. Needs the server to own the creatures,
+  as it does with Dedicated Simulation.
+
+### Changed
+
+- Pins carry short names by default so the map stays readable: BB, CB, LB, Rasp, Mush, YMush,
+  BMush, Magecap, Jotun, Thistle, Dand, Fiddle, Smoke, Sn, Obs, Tar, Barley, Flax; Cu, Ag,
+  Flametal; Crypt, Sunken crypt (Fe), Troll cave, Frost cave, Mine, Hildir crypt/cave/fortress,
+  Haldor. A change of the name lists or the icons now renames the existing pins as well (`qol set`
+  or `qol reload`); a pin whose thing is no longer listed is dropped. A dungeon pin now stands for
+  the location itself, so existing dungeon pins are made once more.
+
 ## [0.3.1] - 2026-09-13
 
 ### Changed

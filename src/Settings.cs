@@ -64,6 +64,8 @@ namespace SarkasticQoL
 		public readonly ConfigEntry<bool> TamesProgress;
 		public readonly ConfigEntry<int> TamesProgressStepPercent;
 		public readonly ConfigEntry<float> TamesProgressRange;
+		public readonly ConfigEntry<bool> TamesLogDeaths;
+		public readonly ConfigEntry<int> TamesDeathsKept;
 
 		public readonly ConfigEntry<bool> ContainersEnabled;
 		public readonly Dictionary<int, ConfigEntry<string>> ContainerSizes = new Dictionary<int, ConfigEntry<string>>();
@@ -184,6 +186,10 @@ namespace SarkasticQoL
 				new ConfigDescription("Show the text again every this many percent.", new AcceptableValueRange<int>(1, 50)));
 			TamesProgressRange = config.Bind("Tames", "ProgressRange", 30f,
 				"Players within this many metres see the text.");
+			TamesLogDeaths = config.Bind("Tames", "LogDeaths", true,
+				"Record every death of a tamed creature: which one, its name and level, where, and what killed it (the creature or player behind the last blow, or burning, smoke, a fall, drowning ...). Written to the server log and kept for !deaths. Needs the server to own the creatures, as it does with Dedicated Simulation.");
+			TamesDeathsKept = config.Bind("Tames", "DeathsKept", 50,
+				new ConfigDescription("How many of the latest deaths are kept for !deaths and qol deaths.", new AcceptableValueRange<int>(5, 500)));
 
 			ContainersEnabled = config.Bind("Containers", "Enabled", true,
 				"Apply the sizes below to player-built containers. One entry per container piece appears here once the world is loaded, as WIDTHxHEIGHT (game default). A container is only shrunk when its items fit.");
@@ -214,13 +220,13 @@ namespace SarkasticQoL
 			PinsMapTextureSize = config.Bind("Pins", "MapTextureSize", 2048,
 				"Size of the map (pixels along one side) a table without any data yet is given. Taken from the game or from a table with data whenever available; a wrong size makes clients ignore the table.");
 			PinsPickableNames = config.Bind("Pins", "PickableNames",
-				"RaspberryBush=Raspberries, BlueberryBush=Blueberries, CloudberryBush=Cloudberries, LingonberryBush=Lingonberries, Pickable_Mushroom=Mushrooms, Pickable_Mushroom_yellow=Yellow mushrooms, Pickable_Mushroom_blue=Blue mushrooms, Pickable_Mushroom_Magecap=Magecaps, Pickable_Mushroom_JotunPuffs=Jotun puffs, Pickable_Thistle=Thistle, Pickable_Dandelion=Dandelions, Pickable_Fiddlehead=Fiddleheads, Pickable_SmokePuff=Smoke puffs, Pickable_Tin=Tin, Pickable_Obsidian=Obsidian, Pickable_Tar=Tar, Pickable_Barley_Wild=Wild barley, Pickable_Flax_Wild=Wild flax",
-				"Pickables to pin as clusters: <prefab>=<pin name>, comma separated. The pin says '<name> x<count>'.");
+				"RaspberryBush=Rasp, BlueberryBush=BB, CloudberryBush=CB, LingonberryBush=LB, Pickable_Mushroom=Mush, Pickable_Mushroom_yellow=YMush, Pickable_Mushroom_blue=BMush, Pickable_Mushroom_Magecap=Magecap, Pickable_Mushroom_JotunPuffs=Jotun, Pickable_Thistle=Thistle, Pickable_Dandelion=Dand, Pickable_Fiddlehead=Fiddle, Pickable_SmokePuff=Smoke, Pickable_Tin=Sn, Pickable_Obsidian=Obs, Pickable_Tar=Tar, Pickable_Barley_Wild=Barley, Pickable_Flax_Wild=Flax",
+				"Pickables to pin as clusters: <prefab>=<pin name>, comma separated. The pin says '<name> x<count>'. Short names keep the map readable; a change renames the existing pins too.");
 			PinsOreNames = config.Bind("Pins", "OreNames",
-				"rock4_copper=Copper, rock4_copper_frac=Copper, silvervein=Silver, silvervein_frac=Silver, MineRock_Meteorite=Flametal",
+				"rock4_copper=Cu, rock4_copper_frac=Cu, silvervein=Ag, silvervein_frac=Ag, MineRock_Meteorite=Flametal",
 				"Ore deposits to pin one by one: <prefab>=<pin name>. A deposit becomes its _frac prefab when first hit, so list both.");
 			PinsDungeonNames = config.Bind("Pins", "DungeonNames",
-				"Crypt2=Burial chamber, Crypt3=Burial chamber, Crypt4=Burial chamber, SunkenCrypt4=Sunken crypt, TrollCave02=Troll cave, MountainCave02=Frost cave, Mistlands_DvergrTownEntrance1=Infested mine, Mistlands_DvergrTownEntrance2=Infested mine, Hildir_crypt=Hildir's crypt, Hildir_cave=Hildir's cave, Hildir_plainsfortress=Hildir's fortress, Vendor_BlackForest=Haldor",
+				"Crypt2=Crypt, Crypt3=Crypt, Crypt4=Crypt, SunkenCrypt4=Sunken crypt (Fe), TrollCave02=Troll cave, MountainCave02=Frost cave, Mistlands_DvergrTownEntrance1=Mine, Mistlands_DvergrTownEntrance2=Mine, Hildir_crypt=Hildir crypt, Hildir_cave=Hildir cave, Hildir_plainsfortress=Hildir fortress, Vendor_BlackForest=Haldor",
 				"Locations to pin: <location>=<pin name>. Boss altars are left to the game's own runestones.");
 			PinsPortalName = config.Bind("Pins", "PortalName", "Portal {0}", "Name of a portal's pin; {0} is its tag.");
 			PinsPickablesIcon = config.Bind("Pins", "PickablesIcon", "dot", "Icon of pickable pins: fire, house, hammer, dot, portal.");

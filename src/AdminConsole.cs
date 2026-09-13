@@ -21,7 +21,7 @@ namespace SarkasticQoL
 				return;
 			}
 			s_registered = true;
-			new Terminal.ConsoleCommand("qol", "Sarkastic.eu QoL: qol status | reload | set <Section.Key> <value> | containers | help",
+			new Terminal.ConsoleCommand("qol", "Sarkastic.eu QoL: qol status | reload | set <Section.Key> <value> | containers | pins | deaths | help",
 				delegate (Terminal.ConsoleEventArgs args)
 				{
 					foreach (string line in Run(args).Split('\n'))
@@ -57,8 +57,14 @@ namespace SarkasticQoL
 					return Containers();
 				case "pins":
 					return PinsCommand(args);
+				case "deaths":
+					{
+						int count = args.Length >= 3 && int.TryParse(args[2], out int n) ? System.Math.Max(1, n) : 20;
+						List<string> lines = TameDeaths.Lines(count);
+						return lines.Count == 0 ? "no deaths of tamed creatures recorded" : $"{TameDeaths.Count} recorded, the latest {lines.Count}:\n  " + string.Join("\n  ", lines);
+					}
 				default:
-					return "qol status | reload | set <Section.Key> <value> | containers | pins";
+					return "qol status | reload | set <Section.Key> <value> | containers | pins | deaths [n]";
 			}
 		}
 

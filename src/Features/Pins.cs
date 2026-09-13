@@ -108,6 +108,7 @@ namespace SarkasticQoL.Features
 		private static readonly Dictionary<int, string> s_pickableNames = new Dictionary<int, string>();
 		private static readonly Dictionary<int, string> s_oreNames = new Dictionary<int, string>();
 		private static readonly Dictionary<int, string> s_dungeonNames = new Dictionary<int, string>();
+		private static readonly Dictionary<int, string> s_prefabOf = new Dictionary<int, string>(); // hash -> the listed prefab or location name
 		private static string s_pickableRaw, s_oreRaw, s_dungeonRaw;
 
 		// Per scan.
@@ -135,6 +136,7 @@ namespace SarkasticQoL.Features
 			s_tableHash = "piece_cartographytable".GetStableHashCode();
 			Reload();
 			Load();
+			Relabel();
 			foreach (ZDO zdo in ZDOMan.instance.m_objectsByID.Values)
 			{
 				if (zdo.GetPrefab() == s_tableHash)
@@ -182,6 +184,7 @@ namespace SarkasticQoL.Features
 			{
 				World.Flag(hash, World.Kind.PinObject);
 			}
+			Relabel();
 		}
 
 		// "RaspberryBush=Raspberries, Pickable_Tin=Tin" -> prefab hash -> label. Without '=' the label is the prefab's readable name.
@@ -201,7 +204,77 @@ namespace SarkasticQoL.Features
 				if (prefab.Length > 0 && label.Length > 0)
 				{
 					into[prefab.GetStableHashCode()] = label;
+					s_prefabOf[prefab.GetStableHashCode()] = prefab;
 				}
+			}
+		}
+
+		// The pins' names follow the lists: after a change of the config (short names, say) every pin is
+		// renamed, and one whose thing is no longer listed is dropped. Icons likewise.
+		private static void Relabel()
+		{
+			bool changed = Relabel(s_pins, true) | Relabel(s_removed, false);
+			if (changed)
+			{
+				s_pinsVersion++;
+				s_saveDue = true;
+			}
+		}
+
+		private static bool Relabel(List<Pin> pins, bool dropUnlisted)
+		{
+			bool changed = false;
+			for (int i = pins.Count - 1; i >= 0; i--)
+			{
+				Pin pin = pins[i];
+				string label = LabelFor(pin);
+				if (label == null)
+				{
+					if (dropUnlisted)
+					{
+						pins.RemoveAt(i);
+						changed = true;
+						QoLPlugin.Log.LogInfo($"Pins: {pin.name} at ({pin.pos.x:0}, {pin.pos.z:0}) dropped: {pin.prefab} is not in the lists");
+					}
+					continue;
+				}
+				Minimap.PinType type = Icon(pin.category);
+				if (label != pin.name || type != pin.type)
+				{
+					pin.name = label;
+					pin.type = type;
+					changed = true;
+				}
+			}
+			return changed;
+		}
+
+		private static string LabelFor(Pin pin)
+		{
+			switch (pin.category)
+			{
+				case Category.Pickables:
+					return s_pickableNames.TryGetValue(pin.prefabHash, out string pickable) ? $"{pickable} x{pin.count}" : null;
+				case Category.Ores:
+					return s_oreNames.TryGetValue(pin.prefabHash, out string ore) ? ore : null;
+				case Category.Dungeons:
+					return s_dungeonNames.TryGetValue(pin.prefabHash, out string dungeon) ? dungeon : null;
+				default:
+					ZDO portal = pin.uid.IsNone() || ZDOMan.instance == null ? null : ZDOMan.instance.GetZDO(pin.uid);
+					return portal == null ? pin.name : PortalName(portal);
+			}
+		}
+
+		private static string PortalName(ZDO portal)
+		{
+			string tag = portal.GetString(ZDOVars.s_tag).Trim();
+			try
+			{
+				return string.Format(QoLPlugin.Settings.PinsPortalName.Value, tag).Trim();
+			}
+			catch (FormatException)
+			{
+				return ("Portal " + tag).Trim();
 			}
 		}
 
@@ -322,31 +395,26 @@ namespace SarkasticQoL.Features
 				}
 				else if (s_oreNames.TryGetValue(prefab, out string label))
 				{
-					Single(Category.Ores, zdo, label);
+					Single(Category.Ores, zdo, label, prefab, World.PrefabName(zdo));
 				}
 			}
-			if ((kind & World.Kind.Location) != 0 && s_dungeonNames.TryGetValue(zdo.GetInt(ZDOVars.s_location), out string dungeon))
+			if ((kind & World.Kind.Location) != 0)
 			{
-				Single(Category.Dungeons, zdo, dungeon);
+				// The pin stands for the location, not for the proxy object that marks it.
+				int location = zdo.GetInt(ZDOVars.s_location);
+				if (s_dungeonNames.TryGetValue(location, out string dungeon))
+				{
+					Single(Category.Dungeons, zdo, dungeon, location, s_prefabOf.TryGetValue(location, out string named) ? named : location.ToString());
+				}
 			}
 			if ((kind & World.Kind.Portal) != 0 && zdo.GetLong(ZDOVars.s_creator) != 0L)
 			{
-				string tag = zdo.GetString(ZDOVars.s_tag).Trim();
-				string name;
-				try
-				{
-					name = string.Format(QoLPlugin.Settings.PinsPortalName.Value, tag).Trim();
-				}
-				catch (FormatException)
-				{
-					name = ("Portal " + tag).Trim();
-				}
-				Single(Category.Portals, zdo, name);
+				Single(Category.Portals, zdo, PortalName(zdo), zdo.GetPrefab(), World.PrefabName(zdo));
 			}
 		}
 
 		// One object, one pin: a deposit, a dungeon entrance, a portal.
-		private static void Single(Category category, ZDO zdo, string name)
+		private static void Single(Category category, ZDO zdo, string name, int prefabHash, string prefab)
 		{
 			Settings s = QoLPlugin.Settings;
 			Pin existing = ByUid(zdo.m_uid);
@@ -368,11 +436,11 @@ namespace SarkasticQoL.Features
 			}
 			Vector3 pos = zdo.GetPosition();
 			float range = s.PinsDiscoverRange.Value;
-			if ((pos - World.Position(s_peer)).sqrMagnitude > range * range || Covered(category, zdo.GetPrefab(), name, pos, 3f))
+			if ((pos - World.Position(s_peer)).sqrMagnitude > range * range || Covered(category, prefabHash, name, pos, 3f))
 			{
 				return;
 			}
-			Add(new Pin { category = category, prefab = World.PrefabName(zdo), prefabHash = zdo.GetPrefab(), pos = pos, count = 1, uid = zdo.m_uid, name = name, type = Icon(category) });
+			Add(new Pin { category = category, prefab = prefab, prefabHash = prefabHash, pos = pos, count = 1, uid = zdo.m_uid, name = name, type = Icon(category) });
 		}
 
 		public void EndScan(ZNetPeer peer)

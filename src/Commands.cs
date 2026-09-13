@@ -187,11 +187,19 @@ namespace SarkasticQoL
 			}
 		}
 
+		// A reply with line breaks goes out as one chat line per line.
 		private static void Reply(ZNetPeer peer, string reply)
 		{
-			if (reply != null)
+			if (reply == null)
 			{
-				Messages.Reply(peer, reply);
+				return;
+			}
+			foreach (string line in reply.Split('\n'))
+			{
+				if (line.Length > 0)
+				{
+					Messages.Reply(peer, line);
+				}
 			}
 		}
 
@@ -244,6 +252,9 @@ namespace SarkasticQoL
 					return PieceToggle(peer, World.Kind.Container, "chest", Sorting.SortKey, words, 1, Sorting.Wanted, "keeps itself sorted");
 				case "pins":
 					return Toggle(peer, "pins", words, "Putting what you find (berries, ore, dungeons, portals) on the map tables") + ". Read a table to get them; hide a kind of pin in the map's icon filter; delete one and write the table to take it off for good";
+				case "deaths":
+				case "deathlog":
+					return Deaths(words);
 				default:
 					return $"Unknown command {p}{words[0]}. {p}help lists them";
 			}
@@ -251,7 +262,7 @@ namespace SarkasticQoL
 
 		private static string Help(string p)
 		{
-			string help = $"{p}sleep (vote to skip the night) | next to a piece: {p}ballista players|tames on|off, {p}door auto on|off, {p}feed on|off, {p}fire feed on|off, {p}label on|off (chest named after its contents), {p}sort on|off, {p}clock on|off | {p}tame on|off | {p}pins on|off (what you find goes on the map tables)";
+			string help = $"{p}sleep (vote to skip the night) | next to a piece: {p}ballista players|tames on|off, {p}door auto on|off, {p}feed on|off, {p}fire feed on|off, {p}label on|off (chest named after its contents), {p}sort on|off, {p}clock on|off | {p}tame on|off | {p}pins on|off (what you find goes on the map tables) | {p}deaths [n] (what killed the tamed animals)";
 			return ServerPresence.Enabled ? help : help + $" -- {p}commands reach the server only while another player is online";
 		}
 
@@ -353,6 +364,22 @@ namespace SarkasticQoL
 			}
 			chest.Set(Labels.LabelKey, on.Value);
 			return on.Value ? "This chest is named after its contents in a moment (close it first)" : "This chest gets its own name back in a moment";
+		}
+
+		// The latest deaths of tamed creatures, one chat line each, newest first.
+		private static string Deaths(string[] words)
+		{
+			if (!QoLPlugin.Settings.TamesLogDeaths.Value)
+			{
+				return "The server does not keep track of tamed creatures' deaths";
+			}
+			int count = words.Length >= 2 && int.TryParse(words[1], out int n) ? Math.Max(1, Math.Min(10, n)) : 5;
+			List<string> lines = TameDeaths.Lines(count);
+			if (lines.Count == 0)
+			{
+				return "No tamed creature has died since the server keeps track";
+			}
+			return $"Last {lines.Count} of {TameDeaths.Count} tamed creatures' deaths (deaths <n> for more, up to 10):\n" + string.Join("\n", lines);
 		}
 
 		private static string Toggle(ZNetPeer peer, string feature, string[] words, string what)

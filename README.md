@@ -44,6 +44,7 @@ from **Server** (the name is configurable).
 | `!label on\|off` | The chest next to you is named after its contents ("Coal 156", "Wood 240, Stone 120, Copper ore 30 +4") when a player looks at it and as the title of the opened chest. It blinks for a moment when the name changes; never while it is open, at most every 10 s. An empty chest, or off, has its own name again. |
 | `!clock on\|off` | The sign next to you shows the day and time ("Day 44 - 19:10"). |
 | `!sort on\|off` | The chest next to you keeps itself sorted: stacks merged, items by name, from the top left. |
+| `!deaths [n]` | What killed the tamed creatures: the latest five (up to ten), with the creature or player behind the last blow, or burning, smoke, a fall, drowning ..., how long ago and where. |
 | `!pins on\|off` | Whether what you find goes on the map tables. Read a table to get the pins; hide a kind of pin with the map's icon filter; delete one and write the table to take it off every table for good. |
 
 How that works: a Valheim client sends its chat only to the players in the player list it got
@@ -67,6 +68,7 @@ that is the panel's console, e.g. AMP -- the command `qol`:
 | `qol set <Section.Key> <value>` | Change a setting now, e.g. `qol set Sleep.RequiredPercent 60`, `qol set Containers.piece_chest_wood 6x2`, `qol set Motd.Text Welcome!`. Saved to the config file. |
 | `qol reload` | Re-read the config file and the field override file after editing them. |
 | `qol containers` | The container sizes with the game's defaults. |
+| `qol deaths [n]` | The latest deaths of tamed creatures and what killed them. |
 | `qol pins` | How many pins of each kind, tables, pins players removed, names in the config the game does not have. `qol pins list [pickables\|ores\|dungeons\|portals]` lists them, `qol pins forget` lets removed pins come back, `qol pins clear` takes every pin off the tables. |
 
 Without Dedicated Simulation the game's console exists on a dedicated server but nothing feeds
@@ -88,6 +90,7 @@ it; edit the config file and restart instead.
 | `[Doors] CloseAfterSeconds`, `PlayerDistance` | 3, 4 | A door closes this long after the last player left this distance. |
 | `[Ballistas] TargetPlayers`, `TargetTames` | false, false | Defaults for ballistas nobody set with `!ballista`. |
 | `[Tames] Progress`, `ProgressStepPercent`, `ProgressRange` | true, 5, 30 | Progress text, how often it repeats, who sees it. |
+| `[Tames] LogDeaths`, `DeathsKept` | true, 50 | Record what kills tamed creatures (server log and `!deaths`), and how many of the latest to keep. |
 | `[Containers] <prefab>` | the game's size | One entry per buildable container appears once the world is loaded, `WIDTHxHEIGHT`, at most 8 wide. A container is only shrunk when its items fit. |
 | `[Feeding] Smelters`, `Fireplaces` | true, false | Defaults for stations nobody set with `!feed` / `!fire feed`. |
 | `[Feeding] Range`, `PlayerDistance`, `LeaveAtLeast`, `ShowText` | 4, 4, 1, true | Chests within Range are used, only when it is below half, never while a player is within PlayerDistance of the station or has the chest open; LeaveAtLeast of each item stays; "+N item" floats above the station. |
@@ -101,7 +104,7 @@ it; edit the config file and restart instead.
 | `[Pins] ClusterRadius`, `ClusterMin` | 24, 3 | Pickables of one kind this close to each other form one cluster, pinned at its centre, if there are at least this many. |
 | `[Pins] FarmDistance` | 20 | No pickable pins this close to a player-built piece (a farm, a base). |
 | `[Pins] WriteSeconds`, `MaxPins` | 60, 1500 | A table is rewritten at most this often and only when its pins changed; no more pins than this. |
-| `[Pins] PickableNames`, `OreNames`, `DungeonNames`, `PortalName` | berries, mushrooms, thistle, dandelions, tin, obsidian, tar ...; copper, silver, flametal; burial chambers, crypts, troll and frost caves, infested mines, Hildir's places, Haldor; `Portal {0}` | What is pinned and what the pin says, `<prefab>=<name>` lists; `qol pins` names any entry the game does not know. |
+| `[Pins] PickableNames`, `OreNames`, `DungeonNames`, `PortalName` | BB, CB, LB, Rasp, Mush, YMush, BMush, Magecap, Jotun, Thistle, Dand, Fiddle, Smoke, Sn, Obs, Tar, Barley, Flax; Cu, Ag, Flametal; Crypt, Sunken crypt (Fe), Troll cave, Frost cave, Mine, Hildir ..., Haldor; `Portal {0}` | What is pinned and what the pin says, `<prefab>=<name>` lists (short, so the map stays readable). A change renames the existing pins too; `qol pins` names any entry the game does not know. |
 | `[Pins] PickablesIcon`, `OresIcon`, `DungeonsIcon`, `PortalsIcon` | dot, hammer, house, portal | The map icon per kind (fire, house, hammer, dot, portal). |
 | `[Pins] MapTextureSize` | 2048 | Only for a table nobody has written yet, when the game does not say: the map's size in pixels along a side. A wrong size makes clients ignore the table. |
 

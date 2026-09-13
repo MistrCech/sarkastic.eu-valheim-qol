@@ -113,6 +113,7 @@ namespace SarkasticQoL
 			}
 			SleepVote.Reset();
 			Motd.Reset();
+			TameDeaths.Load();
 			s_timer = 0f;
 		}
 
