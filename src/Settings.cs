@@ -25,6 +25,25 @@ namespace SarkasticQoL
 
 		public readonly ConfigEntry<bool> GuardPersistentEvents;
 
+		public readonly ConfigEntry<bool> FeedEnabled;
+		public readonly ConfigEntry<bool> FeedSmelters;
+		public readonly ConfigEntry<bool> FeedFireplaces;
+		public readonly ConfigEntry<float> FeedRange;
+		public readonly ConfigEntry<float> FeedPlayerDistance;
+		public readonly ConfigEntry<int> FeedLeaveAtLeast;
+		public readonly ConfigEntry<bool> FeedShowText;
+
+		public readonly ConfigEntry<bool> LabelsEnabled;
+		public readonly ConfigEntry<bool> LabelsDefault;
+		public readonly ConfigEntry<int> LabelsMaxItems;
+		public readonly ConfigEntry<string> LabelsEmptyText;
+		public readonly ConfigEntry<bool> ClocksEnabled;
+		public readonly ConfigEntry<int> ClockStepMinutes;
+		public readonly ConfigEntry<string> ClockFormat;
+
+		public readonly ConfigEntry<bool> SortEnabled;
+		public readonly ConfigEntry<bool> SortDefault;
+
 		public readonly ConfigEntry<string> MotdText;
 		public readonly ConfigEntry<float> MotdDelaySeconds;
 
@@ -72,6 +91,41 @@ namespace SarkasticQoL
 
 			GuardPersistentEvents = config.Bind("Guards", "PersistentEventsAdminOnly", true,
 				"Only admins (adminlist.txt) and the game itself may start or stop persistent world events. In Valheim 1.0 the client command 'pevents start|stop <name>' is open to every player and the server checks nobody.");
+
+			FeedEnabled = config.Bind("Feeding", "Enabled", true,
+				"Stations feed themselves from player-built containers nearby: ore and fuel for smelters, kilns, windmills, spinning wheels and blast furnaces, fuel for shield generators and (if on) fireplaces.");
+			FeedSmelters = config.Bind("Feeding", "Smelters", true,
+				"Default for smelters, kilns, windmills, spinning wheels, blast furnaces and shield generators. A player changes one station with !feed on|off.");
+			FeedFireplaces = config.Bind("Feeding", "Fireplaces", false,
+				"Default for fireplaces, hearths and torches. A player switches one on with !fire feed on. Off by default: every fire in a base would eat the wood in the chests next to it.");
+			FeedRange = config.Bind("Feeding", "Range", 4f,
+				"Containers within this many metres of the station are used.");
+			FeedPlayerDistance = config.Bind("Feeding", "PlayerDistance", 4f,
+				"Nothing is fed while a player is within this many metres of the station: they may be using it.");
+			FeedLeaveAtLeast = config.Bind("Feeding", "LeaveAtLeast", 1,
+				"This many of each item stay in the container.");
+			FeedShowText = config.Bind("Feeding", "ShowText", true,
+				"Show '+N item' above the station to players nearby when it is fed.");
+
+			LabelsEnabled = config.Bind("Signs", "Labels", true,
+				"A sign in front of a chest that lists its contents, kept up to date. A player switches it on for one chest with !label on.");
+			LabelsDefault = config.Bind("Signs", "LabelsDefault", false,
+				"Every player-built chest gets a label unless switched off with !label off.");
+			LabelsMaxItems = config.Bind("Signs", "LabelsMaxItems", 3,
+				new ConfigDescription("How many kinds of item the label names (the most numerous first); the rest is a count.", new AcceptableValueRange<int>(1, 8)));
+			LabelsEmptyText = config.Bind("Signs", "LabelsEmptyText", "empty",
+				"What the label says when the chest is empty.");
+			ClocksEnabled = config.Bind("Signs", "Clocks", true,
+				"A sign can show the in-game day and time: !clock on next to it.");
+			ClockStepMinutes = config.Bind("Signs", "ClockStepMinutes", 10,
+				new ConfigDescription("The clock's resolution in game minutes; a smaller step means more frequent sign updates for everyone nearby.", new AcceptableValueRange<int>(1, 60)));
+			ClockFormat = config.Bind("Signs", "ClockFormat", "Day {0} - {1:00}:{2:00}",
+				"{0} day, {1} hour, {2} minute.");
+
+			SortEnabled = config.Bind("Sorting", "Enabled", true,
+				"Chests that keep themselves tidy: stacks merged, items ordered by name, laid out from the top left, whenever the chest changed and nobody has it open. A player switches it on for one chest with !sort on.");
+			SortDefault = config.Bind("Sorting", "Default", false,
+				"Every player-built chest sorts itself unless switched off with !sort off.");
 
 			MotdText = config.Bind("Motd", "Text", "",
 				"Shown in the middle of a player's screen after they log in. Empty = nothing. Use | for a line break.");

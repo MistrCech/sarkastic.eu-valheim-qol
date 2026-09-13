@@ -229,6 +229,19 @@ namespace SarkasticQoL
 					return Toggle(peer, "tame", words, "Taming and hatching progress");
 				case "sleep":
 					return Sleep(peer, words);
+				case "feed":
+					return PieceToggle(peer, World.Kind.Smelter | World.Kind.ShieldGenerator, "station", Feeding.FeedKey, words, 1,
+						z => Feeding.Wanted(z, World.KindOf(z)), "feeds itself from containers nearby");
+				case "fire":
+					return words.Length >= 2 && words[1] == "feed"
+						? PieceToggle(peer, World.Kind.Fireplace, "fire", Feeding.FeedKey, words, 2, z => Feeding.Wanted(z, World.Kind.Fireplace), "feeds itself from containers nearby")
+						: "Usage: fire feed on|off (the fire next to you)";
+				case "label":
+					return Label(peer, words);
+				case "clock":
+					return PieceToggle(peer, World.Kind.Sign, "sign", Clocks.ClockKey, words, 1, z => z.GetBool(Clocks.ClockKey), "shows the day and time");
+				case "sort":
+					return PieceToggle(peer, World.Kind.Container, "chest", Sorting.SortKey, words, 1, Sorting.Wanted, "keeps itself sorted");
 				default:
 					return $"Unknown command {p}{words[0]}. {p}help lists them";
 			}
@@ -236,7 +249,7 @@ namespace SarkasticQoL
 
 		private static string Help(string p)
 		{
-			string help = $"{p}sleep or /sleep: vote to skip the night (on|off) | {p}ballista players|tames on|off: the one next to you | {p}door auto on|off | {p}tame on|off";
+			string help = $"{p}sleep (vote to skip the night) | next to a piece: {p}ballista players|tames on|off, {p}door auto on|off, {p}feed on|off, {p}fire feed on|off, {p}label on|off, {p}sort on|off, {p}clock on|off | {p}tame on|off";
 			return ServerPresence.Enabled ? help : help + $" -- {p}commands reach the server only while another player is online";
 		}
 
@@ -305,6 +318,43 @@ namespace SarkasticQoL
 			}
 			door.Set(AutoDoors.AutoKey, on.Value);
 			return $"This door closes by itself: {(on.Value ? "on" : "off")}";
+		}
+
+		// on|off for the nearest piece of a kind, stored in the piece; `index` is where on|off sits in the words.
+		private static string PieceToggle(ZNetPeer peer, World.Kind kind, string what, int key, string[] words, int index, Func<ZDO, bool> current, string does)
+		{
+			ZDO piece = World.Nearest(peer, kind, Reach);
+			if (piece == null)
+			{
+				return $"No {what} within {Reach:0} m of you";
+			}
+			bool? on = words.Length > index ? OnOff(words[index]) : null;
+			if (on == null)
+			{
+				return $"This {what} {does}: {(current(piece) ? "on" : "off")}. Change with {string.Join(" ", words, 0, index)} on|off";
+			}
+			piece.Set(key, on.Value ? 1 : 0);
+			return $"This {what} {does}: {(on.Value ? "on" : "off")}";
+		}
+
+		private static string Label(ZNetPeer peer, string[] words)
+		{
+			ZDO chest = World.Nearest(peer, World.Kind.Container, Reach);
+			if (chest == null)
+			{
+				return $"No chest within {Reach:0} m of you";
+			}
+			bool? on = words.Length >= 2 ? OnOff(words[1]) : null;
+			if (on == null)
+			{
+				return $"This chest has a label sign: {(Labels.Wanted(chest) ? "on" : "off")}. Change with label on|off";
+			}
+			chest.Set(Labels.LabelKey, on.Value);
+			if (!on.Value)
+			{
+				Labels.Remove(chest, Labels.SignFor(chest));
+			}
+			return on.Value ? "This chest gets a label sign in a moment" : "Label sign removed";
 		}
 
 		private static string Toggle(ZNetPeer peer, string feature, string[] words, string what)

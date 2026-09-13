@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.2.0] - 2026-09-13
+
+### Added
+
+- Feeding: smelters, kilns, windmills, spinning wheels, blast furnaces and shield generators take
+  ore and fuel from player-built chests within 4 m once below half (`!feed on|off` per station,
+  on by default); fireplaces too when a player switches one on (`!fire feed on`). Never while a
+  player is within 4 m of the station or has the chest open; one of each item stays behind; "+N
+  item" floats above the station.
+- Chest labels (`!label on|off`): a sign in front of the chest lists what is inside, kept up to
+  date with the chest, following it if it settles, removed with the chest.
+- Clocks (`!clock on|off`): a sign shows the in-game day and time in ten-minute steps.
+- Tidy chests (`!sort on|off`): stacks merged, items ordered by name and quality, laid out from
+  the top left, whenever the chest changed and nobody has it open.
+- The scan skips an object a feature has just created afresh under a new id, so nothing acts on
+  the old copy in the same pass.
+
+Verified on a local 1.0.12 server with a spawned scene: a smelter took 19 coal and 9 copper ore
+and left one of each, a fire took 10 wood, a chest with four stacks became two, a label read
+"Wood 40 | Stone 12 | Copper ore 3 | +1" and followed the chest, a clock read "Day 44 - 19:10",
+`!label off` removed the sign.
+
 ## [0.1.3] - 2026-09-13
 
 ### Added

@@ -86,11 +86,35 @@ namespace SarkasticQoL
 			fresh.SetOwner(ZDOMan.GetSessionID());
 			fresh.DataRevision++;
 			ZDOMan.instance.SetDirtySector(fresh);
+			World.Retire(zdo);
 			Destroy(zdo);
 			return fresh;
 		}
 
 		// Both ZNetScene.Destroy and ZDOMan.DestroyZDO only act on an object the server owns.
+		/*
+			A new world object, the way ZNetView.Awake registers one it has just created: every
+			client (and the server) creates the prefab for it. Returns null if there is no such prefab.
+		*/
+		public static ZDO Place(int prefabHash, Vector3 position, Quaternion rotation)
+		{
+			GameObject prefab = ZNetScene.instance.GetPrefab(prefabHash);
+			ZNetView view = prefab ? prefab.GetComponent<ZNetView>() : null;
+			if (!view)
+			{
+				return null;
+			}
+			ZDO zdo = ZDOMan.instance.CreateNewZDO(position, prefabHash);
+			zdo.Persistent = view.m_persistent;
+			zdo.Type = view.m_type;
+			zdo.Distant = view.m_distant;
+			zdo.SetPrefab(prefabHash);
+			zdo.SetRotation(rotation);
+			zdo.DataRevision++;
+			ZDOMan.instance.SetDirtySector(zdo);
+			return zdo;
+		}
+
 		public static void Destroy(ZDO zdo)
 		{
 			zdo.SetOwner(ZDOMan.GetSessionID());

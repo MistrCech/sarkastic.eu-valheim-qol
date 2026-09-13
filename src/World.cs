@@ -17,6 +17,21 @@ namespace SarkasticQoL
 		internal static readonly List<IFeature> Features = new List<IFeature>();
 
 		private static readonly List<ZDO> s_near = new List<ZDO>();
+		// Objects replaced during the current scan (created afresh under a new id): the old ones are still in the list.
+		private static readonly HashSet<ZDOID> s_retired = new HashSet<ZDOID>();
+
+		public static void Retire(ZDO zdo)
+		{
+			s_retired.Add(zdo.m_uid);
+		}
+
+		public static bool IsRetired(ZDO zdo)
+		{
+			return s_retired.Contains(zdo.m_uid);
+		}
+
+		// The objects around the player being scanned, for features that look at neighbours (containers near a smelter).
+		public static IReadOnlyList<ZDO> Near => s_near;
 		private static readonly SimulationDistance s_zonesAround = new SimulationDistance(1, 0, classic: true);
 		private static readonly Dictionary<int, Kind> s_kinds = new Dictionary<int, Kind>();
 		private static float s_timer;
@@ -37,6 +52,7 @@ namespace SarkasticQoL
 			Smelter = 128,
 			Sign = 256,
 			Piece = 512,
+			ShieldGenerator = 1024,
 		}
 
 		public static void Start()
@@ -61,6 +77,7 @@ namespace SarkasticQoL
 				if (prefab.GetComponent<Smelter>()) kind |= Kind.Smelter;
 				if (prefab.GetComponent<Sign>()) kind |= Kind.Sign;
 				if (prefab.GetComponent<Piece>()) kind |= Kind.Piece;
+				if (prefab.GetComponent<ShieldGenerator>()) kind |= Kind.ShieldGenerator;
 				if (kind != Kind.None)
 				{
 					s_kinds[prefab.name.GetStableHashCode()] = kind;
@@ -72,6 +89,10 @@ namespace SarkasticQoL
 			Features.Add(new TameProgress());
 			Features.Add(new ContainerSizes());
 			Features.Add(new PrefabFields());
+			Features.Add(new Feeding());
+			Features.Add(new Labels());
+			Features.Add(new Clocks());
+			Features.Add(new Sorting());
 			foreach (IFeature feature in Features)
 			{
 				feature.Start();
@@ -138,17 +159,19 @@ namespace SarkasticQoL
 		{
 			Vector3 at = Position(peer);
 			s_near.Clear();
+			s_retired.Clear();
 			ZDOMan.instance.FindSectorObjects(ZoneSystem.GetZone(at), s_zonesAround, s_near);
 			foreach (ZDO zdo in s_near)
 			{
 				Kind kind = KindOf(zdo);
-				if (kind == Kind.None)
+				if (kind == Kind.None || s_retired.Contains(zdo.m_uid))
 				{
 					continue;
 				}
 				foreach (IFeature feature in Features)
 				{
-					if ((feature.Kinds & kind) != 0)
+					// A feature may have replaced the object (created it afresh under a new id) a moment ago.
+					if ((feature.Kinds & kind) != 0 && !s_retired.Contains(zdo.m_uid))
 					{
 						feature.Visit(zdo, kind, s_peers);
 					}
@@ -209,6 +232,32 @@ namespace SarkasticQoL
 		public static string PieceName(ZDO zdo)
 		{
 			return PrefabName(zdo);
+		}
+
+		// "CopperOre" -> "Copper ore", "piece_chest_wood" -> "chest wood": readable without the game's translations.
+		public static string PrettyName(string prefab)
+		{
+			if (string.IsNullOrEmpty(prefab))
+			{
+				return "";
+			}
+			string name = prefab.StartsWith("piece_") ? prefab.Substring(6) : prefab;
+			name = name.Replace('_', ' ');
+			System.Text.StringBuilder text = new System.Text.StringBuilder(name.Length + 4);
+			for (int i = 0; i < name.Length; i++)
+			{
+				char c = name[i];
+				if (i > 0 && char.IsUpper(c) && !char.IsUpper(name[i - 1]) && name[i - 1] != ' ')
+				{
+					text.Append(' ');
+					text.Append(char.ToLowerInvariant(c));
+				}
+				else
+				{
+					text.Append(c);
+				}
+			}
+			return text.ToString();
 		}
 	}
 
