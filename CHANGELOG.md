@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.1] - 2026-09-13
+
+### Fixed
+
+- With `SharedTables` off, a table that still held pins from the table mode was rewritten with
+  them again every minute instead of once without them. Seen on the live server after 0.4.0.
+- A portal counts by its object for what a player has had, not by its name: players retag
+  portals to travel, and every new tag put another pin on the map. The default pin name is now
+  plain `Portal` (`[Pins] PortalName`; on a server that had 0.3.x set it with
+  `qol set Pins.PortalName Portal`). A change of icons no longer puts a second pin on a map either.
+
 ## [0.4.0] - 2026-09-13
 
 ### Changed

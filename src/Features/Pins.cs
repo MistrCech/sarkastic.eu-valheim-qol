@@ -483,7 +483,9 @@ namespace SarkasticQoL.Features
 			List<string> names = null;
 			foreach (Pin pin in s_pins)
 			{
-				if (!CategoryOn(pin.category) || (pin.pos - at).sqrMagnitude > range * range || !had.Add(pin.Key))
+				// A portal counts by its object, not its name: players retag portals all the time, and the pin
+				// on the map cannot be taken back, so one pin per portal, under its tag at the time.
+				if (!CategoryOn(pin.category) || (pin.pos - at).sqrMagnitude > range * range || !had.Add(SentKey(pin)))
 				{
 					continue;
 				}
@@ -495,6 +497,13 @@ namespace SarkasticQoL.Features
 				s_saveDue = true;
 				QoLPlugin.Log.LogInfo($"Pins: {names.Count} to {peer.m_playerName}'s map: {string.Join(", ", names)}");
 			}
+		}
+
+		// What a player has had: a portal by its object (players retag portals all the time), anything else by
+		// name and place; the icon is left out, so a change of icons does not put a second pin on the map.
+		private static string SentKey(Pin pin)
+		{
+			return pin.category == Category.Portals && !pin.uid.IsNone() ? $"portal {pin.uid}" : $"{pin.name}@{Mathf.RoundToInt(pin.pos.x)},{Mathf.RoundToInt(pin.pos.z)}";
 		}
 
 		private static HashSet<string> SentTo(string playerId)
@@ -780,12 +789,16 @@ namespace SarkasticQoL.Features
 				{
 					continue;
 				}
+				// With sharing off the list is empty: the table is written once more without ours, then left alone.
 				List<TablePin> wanted = new List<TablePin>();
-				foreach (Pin pin in s_pins)
+				if (shared)
 				{
-					if (CategoryOn(pin.category))
+					foreach (Pin pin in s_pins)
 					{
-						wanted.Add(new TablePin { owner = Owner, name = pin.name, pos = pin.pos, type = (int)pin.type, check = false, author = "" });
+						if (CategoryOn(pin.category))
+						{
+							wanted.Add(new TablePin { owner = Owner, name = pin.name, pos = pin.pos, type = (int)pin.type, check = false, author = "" });
+						}
 					}
 				}
 				StartJob(table, zdo, data, wanted);

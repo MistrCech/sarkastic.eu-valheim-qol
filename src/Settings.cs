@@ -231,7 +231,8 @@ namespace SarkasticQoL
 			PinsDungeonNames = config.Bind("Pins", "DungeonNames",
 				"Crypt2=Crypt, Crypt3=Crypt, Crypt4=Crypt, SunkenCrypt4=Sunken crypt (Fe), TrollCave02=Troll cave, MountainCave02=Frost cave, Mistlands_DvergrTownEntrance1=Mine, Mistlands_DvergrTownEntrance2=Mine, Hildir_crypt=Hildir crypt, Hildir_cave=Hildir cave, Hildir_plainsfortress=Hildir fortress, Vendor_BlackForest=Haldor",
 				"Locations to pin: <location>=<pin name>. Boss altars are left to the game's own runestones.");
-			PinsPortalName = config.Bind("Pins", "PortalName", "Portal {0}", "Name of a portal's pin; {0} is its tag.");
+			PinsPortalName = config.Bind("Pins", "PortalName", "Portal",
+				"Name of a portal's pin; {0} would be its tag, but players retag portals to travel and a pin on a player's map keeps the name it was given.");
 			PinsPickablesIcon = config.Bind("Pins", "PickablesIcon", "dot", "Icon of pickable pins: fire, house, hammer, dot, portal.");
 			PinsOresIcon = config.Bind("Pins", "OresIcon", "hammer", "Icon of ore pins: fire, house, hammer, dot, portal.");
 			PinsDungeonsIcon = config.Bind("Pins", "DungeonsIcon", "house", "Icon of dungeon pins: fire, house, hammer, dot, portal.");
