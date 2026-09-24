@@ -59,7 +59,7 @@ only reach the server while another player is online.
 
 ## How the admin uses it
 
-On the server's own console -- with [Dedicated Simulation](https://github.com/cechacek/valheim-serverside)
+On the server's own console -- with [Dedicated Simulation](https://github.com/MistrCech/valheim-serverside)
 that is the panel's console, e.g. AMP -- the command `qol`:
 
 | Command | |
@@ -154,9 +154,9 @@ features; a few thousand at most, and nothing is changed unless something differ
 3. Restart the server. `BepInEx/LogOutput.log` shows `Sarkastic.eu QoL running`.
 
 Made for the Sarkastic.eu server together with
-[Dedicated Simulation](https://github.com/cechacek/valheim-serverside) (the server simulates the
+[Dedicated Simulation](https://github.com/MistrCech/valheim-serverside) (the server simulates the
 world around players, admin console) and
-[Resource Regrowth](https://github.com/cechacek/valheim-resource-regrowth) (one-time world content
+[Resource Regrowth](https://github.com/MistrCech/valheim-resource-regrowth) (one-time world content
 comes back). Each works on its own.
 
 ## Building
